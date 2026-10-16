@@ -8,7 +8,7 @@ Master Smart Data, ENSAI · Machine Learning labs (2 hours each)
 | 2 | `lab2-svm-knn` | `lab_svm_knn.ipynb` | SVM and the kernel trick, kNN for classification and regression, dimension reduction with gradients |
 | 3 | `lab3-ensembles` | `lab_ensembles.ipynb` | Decision trees, boosting (AdaBoost, gradient boosting, XGBoost), bagging and random forests |
 
-All the labs share **one** repository and **one** virtual environment. You install it once, before the first lab, by following the steps below **in order**. It takes about 10 minutes.
+All the labs share **one** virtual environment. You install it once, before the first lab, by following the steps below **in order**. It takes about 10 minutes.
 
 Before each new lab, you only need to update your copy (section *Getting a new lab*).
 
@@ -147,8 +147,8 @@ Make sure that `(.venv)` appears in the prompt before running `pip install`.
 
 | Path | Content |
 |---|---|
-| `lab1-regression/lab_regression.ipynb` | Lab 1 notebook |
-| `lab2-svm-knn/lab_svm_knn.ipynb` | Lab 2 notebook |
+| `lab1-regression/` | Lab 1 notebook and its solution |
+| `lab2-svm-knn/`| Lab 2 notebook and its solution|
 | `lab2-svm-knn/data/` | datasets of Lab 2: `data1.txt`, `data2.txt`, and `mpg.csv` (UCI Auto MPG dataset) |
 | `lab3-ensembles/lab_ensembles.ipynb` | Lab 3 notebook |
 | `lab3-ensembles/data/` | dataset of Lab 3: `covertype.csv` (Forest Cover Type dataset, Kaggle version) |
