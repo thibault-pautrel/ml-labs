@@ -1,0 +1,457 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Regression Step by Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<script>
+window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" defer></script>
+<style>
+/* Layout: one narrow reading column; each section = formula + a few keyword lines + one interactive figure. */
+:root {
+  --bg: #f7f8fb; --paper: #ffffff; --ink: #1b2233; --muted: #5a6478; --rule: #d9dde7;
+  --pos: #c43d22; --neg: #2457c5; --accent: #6b3fa0; --band: #e9e4f3; --c3: #2f8a52;
+  --display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; --c3: #5fcf8f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; --c3: #5fcf8f; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 72px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--display); margin: 0; }
+.lede { color: var(--muted); margin: 0; }
+h2 { font: 700 22px/1.25 var(--display); margin: 26px 0 0; display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .n { font: 500 14px/1 var(--mono); color: var(--accent); }
+section { display: grid; gap: 10px; }
+p { margin: 0; max-width: 66ch; }
+ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 66ch; }
+.math { overflow-x: auto; overflow-y: hidden; }
+mjx-container[display="true"] { margin: 0.3em 0 !important; }
+.key { background: var(--paper); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 10px 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font: 14.5px/1.4 var(--display); min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13.5px/1.3 var(--display); color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sw.pos { background: var(--pos); border-radius: 2px; } .sw.neg { background: var(--neg); }
+.sw.sv { border: 2px solid var(--accent); } .sw.sv2 { border: 2px dashed var(--accent); }
+
+/* interactive figures */
+.widget { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+.wrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.widget svg.plot { width: 100%; height: auto; display: block; touch-action: none; user-select: none; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font: 14px/1.3 var(--display); }
+.controls label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.controls input[type=range] { width: 160px; accent-color: var(--accent); }
+.readout { font: 13.5px/1.4 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.readout b { color: var(--accent); font-weight: 500; }
+.hint { font: 13.5px/1.4 var(--display); color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.seg button, .btn { font: 500 13px/1 var(--display); padding: 7px 11px; background: var(--paper); color: var(--ink); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--band); color: var(--accent); }
+.btn { border: 1px solid var(--rule); border-radius: 7px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.plotbg { fill: var(--bg); stroke: var(--rule); }
+.band { fill: var(--band); }
+.bandghost { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.bound { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.ghost { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.marg { stroke: var(--ink); stroke-width: 1.1; stroke-dasharray: 5 4; fill: none; opacity: .7; }
+.ppos { stroke: var(--pos); stroke-width: 2.6; fill: none; }
+.pneg { fill: var(--neg); }
+.hit { fill: transparent; cursor: grab; }
+.svring { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.svring2 { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 3 2.5; }
+.near { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.bad { fill: none; stroke: var(--pos); stroke-width: 2; }
+.handle { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.wvec { stroke: var(--accent); stroke-width: 2.4; }
+.xi { stroke: var(--pos); stroke-width: 2; }
+.axis { stroke: var(--muted); stroke-width: 1.1; fill: none; }
+.mesh { stroke: var(--muted); stroke-width: .9; fill: none; opacity: .5; }
+.plane { fill: var(--accent); opacity: .16; stroke: var(--accent); stroke-width: 1; }
+.planeb { fill: var(--accent); opacity: .08; }
+text { font-family: var(--display); fill: var(--muted); font-size: 12px; }
+.arrowhead-w { fill: var(--accent); } .arrowhead { fill: var(--muted); }
+.sw.c3 { background: var(--c3); }
+.pt { fill: var(--neg); cursor: grab; }
+.fit { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.res { stroke: var(--pos); stroke-width: 1.4; }
+.sq { fill: var(--pos); opacity: .13; stroke: var(--pos); stroke-opacity: .4; }
+.mean { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.vec { stroke-width: 2.6; fill: none; }
+.v1 { stroke: var(--pos); } .v2 { stroke: var(--neg); } .v3 { stroke: var(--c3); }
+.h1 { fill: var(--pos); } .h2 { fill: var(--neg); } .h3 { fill: var(--c3); }
+.hh { stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.probe { fill: var(--paper); stroke: var(--ink); stroke-width: 2; cursor: grab; }
+.contour { stroke: var(--muted); stroke-width: 1; fill: none; opacity: .6; }
+.iter { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+.iterpt { fill: var(--accent); }
+.start { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.optm { stroke: var(--ink); stroke-width: 2; }
+.cloud-ols { fill: var(--muted); opacity: .55; }
+.cloud-ridge { fill: var(--accent); opacity: .8; }
+.path { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 4 3; fill: none; }
+.truth { fill: none; stroke: var(--ink); stroke-width: 2; }
+.sig-true { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+.sig-obs { fill: var(--neg); opacity: .7; }
+.sig-rec { stroke: var(--accent); stroke-width: 2.2; fill: none; }
+.chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.stage { position: relative; }
+.stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 4px; }
+.stage svg.plot { position: relative; }
+@media (max-width: 480px) { body { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker>
+</defs></svg>
+
+<main>
+<header>
+  <div class="eyebrow">Master Smart Data · ENSAI · Lab Regression</div>
+  <h1>Regression step by step</h1>
+  <p class="lede">Key ideas behind Parts 1 to 3. All figures are interactive.</p>
+</header>
+
+<section>
+  <h2><span class="n">1</span>From observations to a matrix</h2>
+  <p>Observations \((x_i, y_i)\), \(i = 1, \dots, m\), with \(x_i \in \mathbb{R}^d\), \(y_i \in \mathbb{R}\). Linear model:</p>
+  <div class="math">$$y_i = \theta_0 + \theta_1 x_{i1} + \dots + \theta_d x_{id} + \varepsilon_i = \begin{bmatrix} 1 & x_i^\top \end{bmatrix} \theta + \varepsilon_i, \qquad \theta = (\theta_0, \dots, \theta_d)^\top .$$</div>
+  <p>Stack the \(m\) equations. Each \(x_i\) becomes a row, preceded by a <b>1 for the intercept</b>:</p>
+  <div class="math">$$y = X\theta + \varepsilon, \qquad X = \begin{bmatrix} 1 & x_1^\top \\ \vdots & \vdots \\ 1 & x_m^\top \end{bmatrix} \in \mathbb{R}^{m \times (d+1)} .$$</div>
+  <div class="widget" id="w0">
+    <div class="table-wrap"><svg class="plot" id="w0a" viewBox="0 0 700 190" style="min-width:560px" aria-label="Stacking the observation vectors into the design matrix"></svg></div>
+    <div class="table-wrap"><svg class="plot" id="w0b" viewBox="0 0 700 200" style="min-width:560px" aria-label="The matrix equation y = X theta + epsilon"></svg></div>
+    <div class="readout" id="w0-out"></div>
+    <div class="hint">Click a row (or an observation) to see its equation. Here \(d = 3\).</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Least squares</h2>
+  <div class="math">$$\hat\theta = \arg\min_\theta J(\theta), \qquad J(\theta) = \|y - X\theta\|^2 = \sum_{i=1}^m \big(y_i - [1\ \ x_i^\top]\,\theta\big)^2 .$$</div>
+  <ul>
+    <li><b>Convex quadratic.</b> \(\nabla J(\theta) = -2X^\top(y - X\theta)\), \(\nabla^2 J = 2X^\top X \succeq 0\). A stationary point is a global minimum.</li>
+    <li><b>First-order condition</b> = normal equations:</li>
+  </ul>
+  <div class="math">$$\nabla J(\hat\theta) = 0 \iff X^\top X\,\hat\theta = X^\top y \iff \hat\theta = (X^\top X)^{-1} X^\top y \ \ \text{if } X^\top X \text{ invertible}.$$</div>
+  <div class="widget" id="w1">
+    <div class="wrow">
+      <svg class="plot" id="w1a" viewBox="0 0 340 300" aria-label="Data, your line and the OLS line"></svg>
+      <svg class="plot" id="w1b" viewBox="0 0 340 300" aria-label="Level sets of J in the parameter plane"></svg>
+    </div>
+    <div class="readout" id="w1-out"></div>
+    <div class="hint">Left: data (drag the points). Squares: residuals² of your line, total area = \(J(\theta)\). Right: level sets of \(J\) in the plane \((\theta_0, \theta_1)\). Drag the purple point to move your line. Black cross: \(\hat\theta\), dashed line: OLS fit.</div>
+  </div>
+  <p><b>Goodness of fit.</b> With \(\hat y_i = [1\ \ x_i^\top]\,\hat\theta\) and \(\bar y = \frac1m \sum_i y_i\):</p>
+  <div class="math">$$R^2 = 1 - \frac{\sum_{i=1}^m (y_i - \hat y_i)^2}{\sum_{i=1}^m (y_i - \bar y)^2} \in [0, 1] \quad \text{(with intercept)}.$$</div>
+  <p>Numerator: error of the model. Denominator: error of the constant prediction \(\bar y\). \(R^2\) = share of the variance of \(y\) explained.</p>
+  <p><b>Other indicators.</b> \(\mathrm{RSS} = \sum_i (y_i - \hat y_i)^2\), \(\mathrm{TSS} = \sum_i (y_i - \bar y)^2\), \(k\) = number of parameters. The training RSS is optimistic, so the criteria below penalise \(k\).</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Indicator</th><th>Formula</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>RMSE</td><td>\(\sqrt{\mathrm{RSS}/m}\)</td><td>typical error, in the units of \(y\)</td></tr>
+      <tr><td>MAE</td><td>\(\frac1m \sum_i |y_i - \hat y_i|\)</td><td>typical error, robust to outliers</td></tr>
+      <tr><td>Adjusted \(R^2\)</td><td>\(1 - \frac{\mathrm{RSS}/(m-k)}{\mathrm{TSS}/(m-1)}\)</td><td>increases only if a feature helps more than chance</td></tr>
+      <tr><td>Mallows \(C_p\)</td><td>\(\mathrm{RSS}/\hat\sigma^2 - m + 2k\)</td><td>unbiased estimate of the prediction error. Good model: \(C_p \approx k\)</td></tr>
+      <tr><td>AIC</td><td>\(-2\log\mathcal{L} + 2k\)</td><td>estimates out-of-sample fit. For prediction</td></tr>
+      <tr><td>BIC</td><td>\(-2\log\mathcal{L} + k\log m\)</td><td>heavier penalty, smaller models. Finds the true model as \(m \to \infty\)</td></tr>
+      <tr><td>Cross-validation</td><td>error on held-out folds</td><td>direct estimate, any model, no assumption</td></tr>
+    </tbody>
+  </table></div>
+  <p>\(\hat\sigma^2\): noise variance estimated on the largest model. Smaller \(C_p\), AIC, BIC is better.</p>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Logistic regression</h2>
+  <p><b>Motivation.</b> Now \(y_i \in \{0, 1\}\). Linear regression predicts \(x^\top\theta \in \mathbb{R}\), not a probability. Squash the score into \((0, 1)\):</p>
+  <div class="math">$$P(Y = 1 \mid x) = \sigma(x^\top\theta), \qquad \sigma(z) = \frac{1}{1 + e^{-z}} .$$</div>
+  <div class="widget" id="w2">
+    <svg class="plot" viewBox="0 0 420 260" aria-label="Linear versus logistic fit on binary data"></svg>
+    <div class="readout" id="w2-out"></div>
+    <div class="hint">Drag the points sideways. Click a point to switch its label. Grey: linear regression, leaves \([0, 1]\). Purple: logistic fit, a probability.</div>
+  </div>
+  <p><b>Statistical model.</b> Given \(x_i\), the \(Y_i\) are independent and</p>
+  <div class="math">$$Y_i \mid x_i \sim \mathrm{Bernoulli}(p_i), \qquad p_i = \sigma(x_i^\top\theta), \qquad \mathcal{L}(\theta) = \prod_{i=1}^m p_i^{y_i} (1 - p_i)^{1 - y_i} .$$</div>
+  <p>Maximum likelihood = minimum of the <b>cross-entropy</b> \(-\frac1m \log \mathcal{L}\):</p>
+  <div class="math">$$J(\theta) = -\frac1m \sum_{i=1}^m \Big[ y_i \log p_i + (1 - y_i) \log(1 - p_i) \Big].$$</div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Softmax regression</h2>
+  <p><b>\(K\) classes.</b> One score per class, \(z_k = x^\top\theta_k\), turned into probabilities by the softmax:</p>
+  <div class="math">$$Y_i \mid x_i \sim \mathrm{Categorical}(p_{i0}, \dots, p_{i,K-1}), \qquad p_{ik} = \frac{e^{z_{ik}}}{\sum_{j} e^{z_{ij}}} .$$</div>
+  <ul>
+    <li>Positive, sum to 1, same order as the scores.</li>
+    <li>Boundaries \(z_k = z_l\) are linear in \(x\). Long \(\theta_k\) = confident predictions.</li>
+  </ul>
+  <div class="widget" id="w3">
+    <div class="stage"><canvas width="420" height="320" aria-hidden="true"></canvas><svg class="plot" viewBox="0 0 420 320" aria-label="Softmax regions for three classes"></svg></div>
+    <div class="readout" id="w3-out"></div>
+    <div class="hint">Drag the tips of \(\theta_0, \theta_1, \theta_2\) and the white point \(x\). Colour = most likely class, intensity = its probability. No intercept here.</div>
+  </div>
+  <p>Negative log-likelihood with one-hot labels \(Y_{ik} = \mathbf{1}\{y_i = k\}\). Only the true class counts:</p>
+  <div class="math">$$J(\Theta) = -\frac1m \sum_{i=1}^m \sum_{k} Y_{ik} \log p_{ik} = -\frac1m \sum_{i=1}^m \log p_{i, y_i}, \qquad \nabla_\Theta J = \frac1m X^\top (P - Y).$$</div>
+  <p>No closed form: gradient descent.</p>
+</section>
+
+<section>
+  <h2><span class="n">5</span>Ridge</h2>
+  <p><b>Motivation.</b> The OLS solution needs an inverse:</p>
+  <div class="math">$$\hat\theta = (X^\top X)^{-1} X^\top y .$$</div>
+  <ul>
+    <li>\(d > m\) or collinear features: \(X^\top X\) <b>singular</b>, no unique solution.</li>
+    <li>Correlated features: \(X^\top X\) <b>nearly singular</b>. Small eigenvalues \(\mu_j\) become large \(1/\mu_j\): \(\hat\theta\) explodes and changes a lot with the noise.</li>
+  </ul>
+  <p><b>Fix.</b> Penalise the size of \(\theta\):</p>
+  <div class="math">$$\hat\theta_\lambda = \arg\min_\theta \ \|y - X\theta\|^2 + \lambda \|\theta\|^2, \qquad \lambda > 0 .$$</div>
+  <ul>
+    <li>For \(\lambda > 0\) the problem is <b>strictly convex</b>: unique minimiser, even when \(X^\top X\) is singular.</li>
+    <li>\(\lambda \to 0\): OLS. \(\lambda \to \infty\): \(\theta \to 0\). Trade-off fit / stability, chosen on validation data.</li>
+  </ul>
+  <div class="widget" id="w4">
+    <svg class="plot" viewBox="0 0 420 340" aria-label="OLS and Ridge estimates over many noise draws"></svg>
+    <div class="controls">
+      <label for="w4-rho">correlation ρ <input type="range" id="w4-rho" min="0" max="0.99" step="0.01" value="0.9"></label>
+      <label for="w4-lam">λ <input type="range" id="w4-lam" min="-3" max="1.5" step="0.05" value="-0.5"></label>
+    </div>
+    <div class="readout" id="w4-out"></div>
+    <div class="hint">Plane \((\theta_1, \theta_2)\), two standardised features with correlation ρ. Each dot = estimate from one noisy dataset. Grey: OLS. Purple: Ridge. Circle: true \(\theta\). Ellipses: level sets of the fit term for one dataset. Dashed: its Ridge path as λ grows.</div>
+  </div>
+</section>
+</main>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const tx = (parent, x, y, s, attrs = {}) => { const t = el("text", Object.assign({ x, y }, attrs), parent); t.textContent = s; return t; };
+const f2 = v => v.toFixed(2), clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function frame(W, H, xr, yr, pad) {
+  const sx = (W - 2 * pad) / (xr[1] - xr[0]), sy = (H - 2 * pad) / (yr[1] - yr[0]);
+  return { W, H, pad, xr, yr, sx, sy, X: x => pad + (x - xr[0]) * sx, Y: y => H - pad - (y - yr[0]) * sy,
+    ix: px => xr[0] + (px - pad) / sx, iy: py => yr[0] + (H - pad - py) / sy };
+}
+function svgPoint(svg, evt) { const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function setupPlot(svg, F, id, bg = true) {
+  svg.innerHTML = "";
+  const cp = el("clipPath", { id }, el("defs", {}, svg));
+  el("rect", { x: F.pad, y: F.pad, width: F.W - 2 * F.pad, height: F.H - 2 * F.pad }, cp);
+  el("rect", { x: F.pad, y: F.pad, width: F.W - 2 * F.pad, height: F.H - 2 * F.pad, class: "plotbg", style: bg ? "" : "fill:none" }, svg);
+  return { g: el("g", { "clip-path": `url(#${id})` }, svg), top: el("g", {}, svg) };
+}
+const pathD = pts => "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+function rng(seed) { let a = seed >>> 0; const u = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  return () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u()); }
+function draggable(svg, onMove, onTap) {
+  let k = null, moved = 0, p0 = null;
+  svg.addEventListener("pointerdown", e => { if (e.target.dataset.k !== undefined) { k = e.target.dataset.k; moved = 0; p0 = [e.clientX, e.clientY]; svg.setPointerCapture(e.pointerId); e.preventDefault(); } });
+  svg.addEventListener("pointermove", e => { if (k === null) return; moved = Math.max(moved, Math.hypot(e.clientX - p0[0], e.clientY - p0[1])); if (moved > 3) onMove(k, svgPoint(svg, e)); });
+  svg.addEventListener("pointerup", () => { if (k !== null && moved <= 3 && onTap) onTap(k); k = null; });
+}
+/* ellipse {θ : (θ-c)^T M (θ-c) = lv} for symmetric 2x2 M */
+function ellipse(M, c, lv, F) {
+  const a = M[0][0], b = M[0][1], d = M[1][1], tr = (a + d) / 2, det = Math.sqrt(((a - d) / 2) ** 2 + b * b), l1 = tr + det, l2 = tr - det;
+  const ang = Math.abs(b) < 1e-14 ? (a >= d ? 0 : Math.PI / 2) : Math.atan2(l1 - a, b), u = [Math.cos(ang), Math.sin(ang)], v = [-u[1], u[0]];
+  const pts = []; for (let i = 0; i <= 90; i++) { const t = 2 * Math.PI * i / 90, p = Math.sqrt(lv / l1) * Math.cos(t), q = Math.sqrt(lv / l2) * Math.sin(t);
+    pts.push([F.X(c[0] + p * u[0] + q * v[0]), F.Y(c[1] + p * u[1] + q * v[1])]); }
+  return pathD(pts);
+}
+
+/* ---------- 0. From observations to the matrix ---------- */
+(() => {
+  const A = document.getElementById("w0a"), B = document.getElementById("w0b"), out = document.getElementById("w0-out");
+  const rows = ["1", "2", "3", "⋮", "m"], d = 3, sub = ["₁", "₂", "₃"];
+  const name = r => r === "m" ? "ₘ" : "₁₂₃"[+r - 1];
+  let sel = 1;
+  const cell = (g, x, y, w, h, s, cls, k) => { const r = el("rect", { x, y, width: w, height: h, rx: 3, style: `fill:${cls === "hi" ? "var(--band)" : cls === "one" ? "color-mix(in srgb, var(--accent) 18%, var(--paper))" : "var(--paper)"};stroke:${cls === "hi" ? "var(--accent)" : "var(--rule)"};cursor:${k !== undefined ? "pointer" : "default"}` }, g);
+    if (k !== undefined) r.dataset.r = k; const t = tx(g, x + w / 2, y + h / 2 + 4, s, { "text-anchor": "middle", style: `fill:var(--ink);font-size:12px;pointer-events:none;font-family:var(--mono)` }); return r; };
+  function draw() {
+    A.innerHTML = ""; B.innerHTML = "";
+    // A: observation vectors x_1 ... x_m as columns
+    tx(A, 20, 20, "observations xᵢ ∈ ℝᵈ", { style: "font-size:12.5px;fill:var(--muted)" });
+    rows.forEach((r, j) => { const x0 = 20 + j * 46;
+      if (r === "⋮") { tx(A, x0 + 18, 100, "…", { "text-anchor": "middle", style: "font-size:18px;fill:var(--ink)" }); return; }
+      for (let c = 0; c < d; c++) cell(A, x0, 40 + c * 30, 36, 26, `x${name(r)}${sub[c]}`, j === sel ? "hi" : "", j);
+      tx(A, x0 + 18, 150, "x" + name(r), { "text-anchor": "middle", style: "fill:var(--ink);font-size:13px" });
+    });
+    el("line", { x1: 262, y1: 95, x2: 322, y2: 95, class: "axis", "marker-end": "url(#ah)" }, A);
+    tx(A, 292, 82, "transpose", { "text-anchor": "middle" }); tx(A, 292, 116, "add a 1", { "text-anchor": "middle" });
+    tx(A, 340, 20, "design matrix X ∈ ℝ^{m×(d+1)}".replace("^{m×(d+1)}", "ᵐˣ⁽ᵈ⁺¹⁾"), { style: "font-size:12.5px;fill:var(--muted)" });
+    rows.forEach((r, j) => { const y0 = 32 + j * 29;
+      if (r === "⋮") { tx(A, 420, y0 + 18, "⋮", { "text-anchor": "middle", style: "font-size:16px;fill:var(--ink)" }); return; }
+      cell(A, 340, y0, 36, 25, "1", j === sel ? "hi" : "one", j);
+      for (let c = 0; c < d; c++) cell(A, 380 + c * 44, y0, 40, 25, `x${name(r)}${sub[c]}`, j === sel ? "hi" : "", j);
+      tx(A, 530, y0 + 17, `← [1  x${name(r)}ᵀ]`, { style: "fill:var(--muted);font-size:12px" });
+    });
+    // B: y = X θ + ε
+    const yy = j => 30 + j * 30;
+    const col = (x, lab, j0) => rows.forEach((r, j) => r === "⋮" ? tx(B, x + 16, yy(j) + 18, "⋮", { "text-anchor": "middle", style: "font-size:16px;fill:var(--ink)" }) : cell(B, x, yy(j), 32, 26, lab(r), j === sel ? "hi" : "", j));
+    col(20, r => "y" + name(r)); tx(B, 36, 188, "y ∈ ℝᵐ", { "text-anchor": "middle" });
+    tx(B, 72, 100, "=", { "text-anchor": "middle", style: "font-size:20px;fill:var(--ink)" });
+    rows.forEach((r, j) => { if (r === "⋮") { tx(B, 170, yy(j) + 18, "⋮", { "text-anchor": "middle", style: "font-size:16px;fill:var(--ink)" }); return; }
+      cell(B, 90, yy(j), 32, 26, "1", j === sel ? "hi" : "one", j);
+      for (let c = 0; c < d; c++) cell(B, 126 + c * 42, yy(j), 38, 26, `x${name(r)}${sub[c]}`, j === sel ? "hi" : "", j); });
+    tx(B, 170, 188, "X", { "text-anchor": "middle" });
+    for (let c = 0; c <= d; c++) cell(B, 270, 45 + c * 30, 32, 26, "θ" + "₀₁₂₃"[c], "hi");
+    tx(B, 286, 188, "θ ∈ ℝᵈ⁺¹", { "text-anchor": "middle" });
+    tx(B, 330, 100, "+", { "text-anchor": "middle", style: "font-size:20px;fill:var(--ink)" });
+    col(350, r => "ε" + name(r)); tx(B, 366, 188, "ε ∈ ℝᵐ", { "text-anchor": "middle" });
+    tx(B, 410, 70, "row i of X times θ:", { style: "fill:var(--muted);font-size:12.5px" });
+    const r = rows[sel], n = name(r);
+    tx(B, 410, 96, `y${n} = θ₀ + θ₁x${n}₁ + θ₂x${n}₂ + θ₃x${n}₃ + ε${n}`, { style: "fill:var(--ink);font-size:12px;font-family:var(--mono)" });
+    tx(B, 410, 122, "the 1 multiplies the intercept θ₀", { style: "fill:var(--accent);font-size:12.5px" });
+    out.textContent = `selected: observation ${r === "m" ? "m" : r}`;
+  }
+  [A, B].forEach(s => s.addEventListener("click", e => { const r = e.target.dataset ? e.target.dataset.r : undefined; if (r !== undefined) { sel = +r; draw(); } }));
+  draw();
+})();
+
+/* ---------- 1. OLS: data space and parameter space ---------- */
+(() => {
+  const A = document.getElementById("w1a"), B = document.getElementById("w1b"), out = document.getElementById("w1-out");
+  const FA = frame(340, 300, [0, 10], [0, 8.4], 12), FB = frame(340, 300, [-2.5, 4.5], [-0.4, 1.4], 12);
+  let P = [[0.8, 1.6], [1.6, 1.3], [2.3, 2.6], [3.1, 2.2], [3.9, 3.4], [4.6, 2.9], [5.4, 4.1], [6.2, 3.7], [7.0, 4.9], [7.8, 4.5], [8.6, 5.8], [9.3, 5.4]];
+  let th = [3.0, 0.15];
+  function draw() {
+    const m = P.length; let sx = 0, sxx = 0, sy = 0, sxy = 0; P.forEach(p => { sx += p[0]; sxx += p[0] * p[0]; sy += p[1]; sxy += p[0] * p[1]; });
+    const det = m * sxx - sx * sx, h = [(sxx * sy - sx * sxy) / det, (m * sxy - sx * sy) / det];   // (X^T X)^{-1} X^T y
+    const J = t => P.reduce((s, p) => s + (p[1] - t[0] - t[1] * p[0]) ** 2, 0), Jm = J(h), ybar = sy / m, tss = P.reduce((s, p) => s + (p[1] - ybar) ** 2, 0);
+    // data panel
+    let { g, top } = setupPlot(A, FA, "c1a");
+    P.forEach(p => { const yh = th[0] + th[1] * p[0], r = p[1] - yh;
+      el("rect", { x: FA.X(p[0]), y: FA.Y(Math.max(p[1], yh)), width: Math.abs(r) * FA.sx, height: Math.abs(r) * FA.sy, class: "sq" }, g);
+      el("line", { x1: FA.X(p[0]), y1: FA.Y(p[1]), x2: FA.X(p[0]), y2: FA.Y(yh), class: "res" }, g); });
+    el("line", { x1: FA.X(0), y1: FA.Y(h[0]), x2: FA.X(10), y2: FA.Y(h[0] + 10 * h[1]), class: "fit", style: "stroke-dasharray:6 4;stroke-width:1.6" }, g);
+    el("line", { x1: FA.X(0), y1: FA.Y(th[0]), x2: FA.X(10), y2: FA.Y(th[0] + 10 * th[1]), class: "fit", style: "stroke:var(--accent)" }, g);
+    P.forEach((p, i) => el("circle", { cx: FA.X(p[0]), cy: FA.Y(p[1]), r: 6, class: "pt", "data-k": i }, top));
+    tx(top, 20, 290, "data: x → y");
+    // parameter panel
+    ({ g, top } = setupPlot(B, FB, "c1b"));
+    const M = [[m, sx], [sx, sxx]];
+    [0.5, 2, 6, 15, 35, 70].forEach(c => el("path", { class: "contour", d: ellipse(M, h, c, FB) }, g));
+    el("path", { d: `M${FB.X(h[0]) - 6} ${FB.Y(h[1]) - 6}l12 12M${FB.X(h[0]) + 6} ${FB.Y(h[1]) - 6}l-12 12`, class: "optm" }, g);
+    el("circle", { cx: FB.X(th[0]), cy: FB.Y(th[1]), r: 8, class: "start", "data-k": "t" }, top);
+    tx(top, 20, 290, "parameters: θ₀ (→), θ₁ (↑)");
+    out.innerHTML = `your θ = (${f2(th[0])}, ${f2(th[1])}), J(θ) = <b>${f2(J(th))}</b> · θ̂ = (${f2(h[0])}, ${f2(h[1])}), J(θ̂) = <b>${f2(Jm)}</b> · R² = <b>${f2(1 - Jm / tss)}</b>`;
+  }
+  draggable(A, (k, p) => { P[k] = [clamp(FA.ix(p.x), 0.1, 9.9), clamp(FA.iy(p.y), 0.1, 8.3)]; draw(); });
+  draggable(B, (k, p) => { th = [clamp(FB.ix(p.x), -2.4, 4.4), clamp(FB.iy(p.y), -0.38, 1.38)]; draw(); });
+  draw();
+})();
+
+/* ---------- 2. Linear vs logistic on binary data ---------- */
+(() => {
+  const svg = document.querySelector("#w2 svg"), out = document.getElementById("w2-out"), F = frame(420, 260, [0, 10], [-0.45, 1.45], 14);
+  const P = [[0.6, 0], [1.3, 0], [2.0, 0], [2.6, 0], [3.3, 0], [4.1, 1], [4.4, 0], [5.0, 0], [5.6, 1], [6.1, 1], [6.8, 1], [7.4, 1], [8.1, 1], [8.9, 1], [9.5, 1]];
+  const sig = z => 1 / (1 + Math.exp(-z));
+  function logit() {   // Newton's method, tiny ridge for separable data
+    let t = [0, 0];
+    for (let it = 0; it < 50; it++) { let g0 = 1e-3 * t[0], g1 = 1e-3 * t[1], h00 = 1e-3, h01 = 0, h11 = 1e-3;
+      P.forEach(([x, y]) => { const p = sig(t[0] + t[1] * x), w = p * (1 - p); g0 += p - y; g1 += (p - y) * x; h00 += w; h01 += w * x; h11 += w * x * x; });
+      const d = h00 * h11 - h01 * h01; t = [t[0] - (h11 * g0 - h01 * g1) / d, t[1] - (h00 * g1 - h01 * g0) / d]; }
+    return t;
+  }
+  function draw() {
+    const m = P.length; let sx = 0, sxx = 0, sy = 0, sxy = 0; P.forEach(p => { sx += p[0]; sxx += p[0] * p[0]; sy += p[1]; sxy += p[0] * p[1]; });
+    const det = m * sxx - sx * sx, l = [(sxx * sy - sx * sxy) / det, (m * sxy - sx * sy) / det], t = logit();
+    const { g, top } = setupPlot(svg, F, "c2");
+    [0, 1].forEach(v => el("line", { x1: F.X(0), y1: F.Y(v), x2: F.X(10), y2: F.Y(v), class: "axis", style: "opacity:.35" }, g));
+    el("rect", { x: F.X(0), y: F.Y(1.45), width: F.X(10) - F.X(0), height: F.Y(1) - F.Y(1.45), style: "fill:var(--pos);opacity:.06" }, g);
+    el("rect", { x: F.X(0), y: F.Y(0), width: F.X(10) - F.X(0), height: F.Y(-0.45) - F.Y(0), style: "fill:var(--pos);opacity:.06" }, g);
+    el("line", { x1: F.X(0), y1: F.Y(l[0]), x2: F.X(10), y2: F.Y(l[0] + 10 * l[1]), class: "fit", style: "stroke:var(--muted)" }, g);
+    el("path", { class: "sig-rec", d: pathD(Array.from({ length: 101 }, (_, i) => { const x = i / 10; return [F.X(x), F.Y(sig(t[0] + t[1] * x))]; })) }, g);
+    P.forEach((p, i) => el("circle", { cx: F.X(p[0]), cy: F.Y(p[1]), r: 6, class: p[1] ? "h1 hh" : "h2 hh", "data-k": i }, top));
+    tx(top, F.X(0) + 4, F.Y(1) - 12, "y = 1"); tx(top, F.X(0) + 4, F.Y(0) + 24, "y = 0");
+    const nll = -P.reduce((s, [x, y]) => { const p = clamp(sig(t[0] + t[1] * x), 1e-12, 1 - 1e-12); return s + (y ? Math.log(p) : Math.log(1 - p)); }, 0) / m;
+    const lo = Math.min(l[0], l[0] + 10 * l[1]), hi = Math.max(l[0], l[0] + 10 * l[1]);
+    out.innerHTML = `linear fit ranges over [${f2(lo)}, ${f2(hi)}] · logistic: P(Y = 1 | x) = σ(${f2(t[0])} + ${f2(t[1])} x), cross-entropy <b>${f2(nll)}</b>`;
+  }
+  draggable(svg, (k, p) => { P[k][0] = clamp(F.ix(p.x), 0.1, 9.9); draw(); }, k => { P[k][1] = 1 - P[k][1]; draw(); });
+  draw();
+})();
+
+/* ---------- 3. Softmax regions ---------- */
+(() => {
+  const wrap = document.getElementById("w3"), svg = wrap.querySelector("svg"), cv = wrap.querySelector("canvas"), ctx = cv.getContext("2d");
+  const out = document.getElementById("w3-out"), F = frame(420, 320, [-3.2, 3.2], [-2.45, 2.45], 14);
+  const T = [[1.6, 0.4], [-1.0, 1.3], [-0.6, -1.4]], x = [1.0, 1.2], cls = ["h1", "h2", "h3"], vcls = ["v1", "v2", "v3"];
+  const hex = h => { h = h.trim().replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  const probs = p => { const z = T.map(t => t[0] * p[0] + t[1] * p[1]), m = Math.max(...z), e = z.map(v => Math.exp(v - m)), s = e[0] + e[1] + e[2]; return e.map(v => v / s); };
+  function paint() {
+    const cs = getComputedStyle(document.documentElement), col = ["--pos", "--neg", "--c3"].map(v => hex(cs.getPropertyValue(v))), bg = hex(cs.getPropertyValue("--paper"));
+    const step = 4, img = ctx.createImageData(cv.width, cv.height);
+    for (let py = 0; py < cv.height; py += step) for (let px = 0; px < cv.width; px += step) {
+      const pr = probs([F.ix(px + step / 2), F.iy(py + step / 2)]), k = pr.indexOf(Math.max(...pr)), a = 0.12 + 0.55 * (pr[k] - 1 / 3) * 1.5;
+      const c = col[k].map((v, i) => Math.round(bg[i] + (v - bg[i]) * a));
+      for (let dy = 0; dy < step; dy++) for (let dx = 0; dx < step; dx++) { const o = 4 * ((py + dy) * cv.width + px + dx); img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255; }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  function draw() {
+    paint();
+    const { g, top } = setupPlot(svg, F, "c3", false);
+    el("line", { x1: F.X(-3.2), y1: F.Y(0), x2: F.X(3.2), y2: F.Y(0), class: "axis", style: "opacity:.35" }, g);
+    el("line", { x1: F.X(0), y1: F.Y(-2.45), x2: F.X(0), y2: F.Y(2.45), class: "axis", style: "opacity:.35" }, g);
+    T.forEach((t, k) => {
+      el("line", { x1: F.X(0), y1: F.Y(0), x2: F.X(t[0]), y2: F.Y(t[1]), class: "vec " + vcls[k] }, g);
+      tx(top, F.X(t[0]) + 10, F.Y(t[1]) - 8, "θ" + "₀₁₂"[k], { style: "font-weight:600;fill:var(--ink)" });
+      el("circle", { cx: F.X(t[0]), cy: F.Y(t[1]), r: 8, class: cls[k] + " hh", "data-k": "t" + k }, top);
+    });
+    el("circle", { cx: F.X(x[0]), cy: F.Y(x[1]), r: 7, class: "probe", "data-k": "x" }, top);
+    tx(top, F.X(x[0]) + 10, F.Y(x[1]) + 16, "x", { style: "font-weight:600;fill:var(--ink)" });
+    const pr = probs(x), chip = ["var(--pos)", "var(--neg)", "var(--c3)"];
+    out.innerHTML = "P(Y = k | x): " + pr.map((p, k) => `<span class="chip" style="background:${chip[k]}"></span>${k}: <b>${f2(p)}</b>`).join("  ") + ` · if the true class is 0: −log p = ${f2(-Math.log(pr[0]))}`;
+  }
+  draggable(svg, (k, p) => { const q = [clamp(F.ix(p.x), -3.1, 3.1), clamp(F.iy(p.y), -2.35, 2.35)];
+    if (k === "x") { x[0] = q[0]; x[1] = q[1]; } else T[+k[1]] = q; draw(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  draw();
+})();
+
+/* ---------- 4. Ridge: variance of OLS vs Ridge ---------- */
+(() => {
+  const svg = document.querySelector("#w4 svg"), out = document.getElementById("w4-out");
+  const rIn = document.getElementById("w4-rho"), lIn = document.getElementById("w4-lam");
+  const F = frame(420, 340, [-0.9, 2.9], [-0.6, 2.5], 14), th0 = [1, 1], s2 = 0.06, N = 60;
+  const r = rng(7), Z = Array.from({ length: N }, () => [r(), r()]);
+  const solve2 = (M, b) => { const d = M[0][0] * M[1][1] - M[0][1] * M[1][0]; return [(M[1][1] * b[0] - M[0][1] * b[1]) / d, (M[0][0] * b[1] - M[1][0] * b[0]) / d]; };
+  function draw() {
+    const rho = +rIn.value, lam = Math.pow(10, +lIn.value), G = [[1, rho], [rho, 1]], l22 = Math.sqrt(1 - rho * rho);
+    const B = Z.map(z => [1 * th0[0] + rho * th0[1] + Math.sqrt(s2) * z[0], rho * th0[0] + th0[1] + Math.sqrt(s2) * (rho * z[0] + l22 * z[1])]);   // X^T y
+    const ols = B.map(b => solve2(G, b)), rid = B.map(b => solve2([[1 + lam, rho], [rho, 1 + lam]], b));
+    const { g, top } = setupPlot(svg, F, "c4");
+    el("line", { x1: F.X(-0.9), y1: F.Y(0), x2: F.X(2.9), y2: F.Y(0), class: "axis", style: "opacity:.35" }, g);
+    el("line", { x1: F.X(0), y1: F.Y(-0.6), x2: F.X(0), y2: F.Y(2.5), class: "axis", style: "opacity:.35" }, g);
+    [0.02, 0.1, 0.3].forEach(lv => el("path", { class: "contour", d: ellipse(G, ols[0], lv, F) }, g));
+    const path = []; for (let e = -4; e <= 3; e += 0.05) { const q = solve2([[1 + 10 ** e, rho], [rho, 1 + 10 ** e]], B[0]); path.push([F.X(q[0]), F.Y(q[1])]); }
+    path.push([F.X(0), F.Y(0)]); el("path", { class: "path", d: pathD(path) }, g);
+    ols.forEach(q => el("circle", { cx: F.X(q[0]), cy: F.Y(q[1]), r: 2.6, class: "cloud-ols" }, g));
+    rid.forEach(q => el("circle", { cx: F.X(q[0]), cy: F.Y(q[1]), r: 2.6, class: "cloud-ridge" }, g));
+    el("circle", { cx: F.X(th0[0]), cy: F.Y(th0[1]), r: 7, class: "truth" }, top);
+    tx(top, F.X(2.85), F.Y(0) - 6, "θ₁", { "text-anchor": "end" }); tx(top, F.X(0) + 6, F.Y(2.4) + 4, "θ₂");
+    const mse = E => E.reduce((s, q) => s + (q[0] - th0[0]) ** 2 + (q[1] - th0[1]) ** 2, 0) / E.length;
+    out.innerHTML = `eigenvalues of XᵀX/m: ${f2(1 + rho)}, ${f2(1 - rho)} · λ = ${lam < 1 ? lam.toFixed(3) : f2(lam)} · mean ‖θ̂ − θ‖²: OLS <b>${f2(mse(ols))}</b>, Ridge <b>${f2(mse(rid))}</b>`;
+  }
+  rIn.addEventListener("input", draw); lIn.addEventListener("input", draw);
+  draw();
+})();
+</script>
+
+</body></html>

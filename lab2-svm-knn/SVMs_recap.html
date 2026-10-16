@@ -1,0 +1,426 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SVMs Step by Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<script>
+window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" defer></script>
+<style>
+/* Layout: one narrow reading column; each section = formula + a few keyword lines + one interactive figure. */
+:root {
+  --bg: #f7f8fb; --paper: #ffffff; --ink: #1b2233; --muted: #5a6478; --rule: #d9dde7;
+  --pos: #c43d22; --neg: #2457c5; --accent: #6b3fa0; --band: #e9e4f3;
+  --display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 72px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--display); margin: 0; }
+.lede { color: var(--muted); margin: 0; }
+h2 { font: 700 22px/1.25 var(--display); margin: 26px 0 0; display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .n { font: 500 14px/1 var(--mono); color: var(--accent); }
+section { display: grid; gap: 10px; }
+p { margin: 0; max-width: 66ch; }
+ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 66ch; }
+.math { overflow-x: auto; overflow-y: hidden; }
+mjx-container[display="true"] { margin: 0.3em 0 !important; }
+.key { background: var(--paper); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 10px 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font: 14.5px/1.4 var(--display); min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13.5px/1.3 var(--display); color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sw.pos { background: var(--pos); border-radius: 2px; } .sw.neg { background: var(--neg); }
+.sw.sv { border: 2px solid var(--accent); } .sw.sv2 { border: 2px dashed var(--accent); }
+
+/* interactive figures */
+.widget { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+.wrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.widget svg.plot { width: 100%; height: auto; display: block; touch-action: none; user-select: none; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font: 14px/1.3 var(--display); }
+.controls label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.controls input[type=range] { width: 160px; accent-color: var(--accent); }
+.readout { font: 13.5px/1.4 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.readout b { color: var(--accent); font-weight: 500; }
+.hint { font: 13.5px/1.4 var(--display); color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.seg button, .btn { font: 500 13px/1 var(--display); padding: 7px 11px; background: var(--paper); color: var(--ink); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--band); color: var(--accent); }
+.btn { border: 1px solid var(--rule); border-radius: 7px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.plotbg { fill: var(--bg); stroke: var(--rule); }
+.band { fill: var(--band); }
+.bandghost { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.bound { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.ghost { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.marg { stroke: var(--ink); stroke-width: 1.1; stroke-dasharray: 5 4; fill: none; opacity: .7; }
+.ppos { stroke: var(--pos); stroke-width: 2.6; fill: none; }
+.pneg { fill: var(--neg); }
+.hit { fill: transparent; cursor: grab; }
+.svring { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.svring2 { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 3 2.5; }
+.near { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.bad { fill: none; stroke: var(--pos); stroke-width: 2; }
+.handle { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.wvec { stroke: var(--accent); stroke-width: 2.4; }
+.xi { stroke: var(--pos); stroke-width: 2; }
+.axis { stroke: var(--muted); stroke-width: 1.1; fill: none; }
+.mesh { stroke: var(--muted); stroke-width: .9; fill: none; opacity: .5; }
+.plane { fill: var(--accent); opacity: .16; stroke: var(--accent); stroke-width: 1; }
+.planeb { fill: var(--accent); opacity: .08; }
+text { font-family: var(--display); fill: var(--muted); font-size: 12px; }
+.arrowhead-w { fill: var(--accent); } .arrowhead { fill: var(--muted); }
+@media (max-width: 480px) { body { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="aw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" class="arrowhead-w"/></marker>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker>
+</defs></svg>
+
+<main>
+<header>
+  <div class="eyebrow">Master Smart Data · ENSAI · Lab SVM and kNN, Part 1</div>
+  <h1>SVMs step by step</h1>
+  <p class="lede">Key ideas behind Part 1. All figures are interactive.</p>
+  <div class="legend">
+    <span><i class="sw pos"></i>\(y=+1\)</span><span><i class="sw neg"></i>\(y=-1\)</span>
+    <span><i class="sw sv"></i>support vector</span><span><i class="sw sv2"></i>support vector with \(\alpha_i = C\)</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="n">1</span>Margin</h2>
+  <div class="math">$$h(x) = w^\top x + b, \qquad \hat y = \operatorname{sign} h(x), \qquad d(x) = \frac{|w^\top x + b|}{\|w\|}.$$</div>
+  <ul>
+    <li><b>Scale invariance.</b> \((\lambda w, \lambda b)\) defines the same hyperplane. Fix the scale: \(\min_i |w^\top x_i + b| = 1\).</li>
+    <li><b>Why \(2/\|w\|\).</b> The closest points then satisfy \(w^\top x + b = \pm 1\), so \(d = 1/\|w\|\) on each side. Margin width \(= 2/\|w\|\).</li>
+  </ul>
+  <div class="widget" id="w1">
+    <svg class="plot" viewBox="0 0 420 360" aria-label="Drag the line to change the margin"></svg>
+    <div class="controls">
+      <button class="btn" id="w1-best" type="button" aria-pressed="false">Show SVM line</button>
+      <span class="readout" id="w1-out"></span>
+    </div>
+    <div class="hint">Drag the two purple handles. The band is the widest empty band centred on your line.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Hard margin</h2>
+  <div class="math">$$\max_{w,b} \frac{2}{\|w\|} \iff \min_{w,\,b}\ \tfrac12 \|w\|^2 \quad \text{s.t.} \quad y_i\,(w^\top x_i + b) \ge 1 \ \ \forall i.$$</div>
+  <ul>
+    <li>Constraint: each point on its side, outside the band.</li>
+    <li>Convex quadratic: unique solution. Infeasible as soon as the classes overlap.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Soft margin</h2>
+  <div class="math">$$\min_{w,\,b,\,\xi}\ \underbrace{\tfrac12 \|w\|^2}_{\text{wide margin}} + C \underbrace{\sum_i \xi_i}_{\text{violations}} \quad \text{s.t.} \quad y_i\,(w^\top x_i + b) \ge 1 - \xi_i,\ \ \xi_i \ge 0.$$</div>
+  <ul>
+    <li><b>\(\xi_i\)</b>: depth of point \(i\) into the band. \(\xi_i = 0\) outside, \(0 < \xi_i < 1\) inside, \(\xi_i > 1\) misclassified.</li>
+    <li><b>\(C\)</b>: price of one unit of violation. Small \(C\): wide band, violations tolerated. Large \(C\): narrow band, few violations. \(C \to \infty\) forces \(\xi_i = 0\): hard margin (if separable).</li>
+    <li>Same shape as Ridge, penalty + loss, with \(C \approx 1/\lambda\).</li>
+  </ul>
+  <div class="widget" id="w2">
+    <svg class="plot" viewBox="0 0 420 360" aria-label="Live soft-margin SVM"></svg>
+    <div class="controls">
+      <label for="w2-c">C <input type="range" id="w2-c" min="-2" max="3" step="0.05" value="0"></label>
+      <div class="seg" role="group" aria-label="Mouse action">
+        <button type="button" data-mode="drag" aria-pressed="true">Drag</button>
+        <button type="button" data-mode="1" aria-pressed="false">Add +1</button>
+        <button type="button" data-mode="-1" aria-pressed="false">Add −1</button>
+      </div>
+      <button class="btn" type="button" id="w2-reset">Reset</button>
+    </div>
+    <div class="readout" id="w2-out"></div>
+    <div class="hint">Drag the points or add some, and move C. Red segments are the slacks \(\xi_i\) (divided by \(\|w\|\)).</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Dual and support vectors</h2>
+  <p>Multipliers \(\alpha_i \ge 0\) for the margin constraints, \(\mu_i \ge 0\) for \(\xi_i \ge 0\):</p>
+  <div class="math">$$L = \tfrac12\|w\|^2 + C\sum_i \xi_i - \sum_i \alpha_i\big(y_i(w^\top x_i + b) - 1 + \xi_i\big) - \sum_i \mu_i \xi_i .$$</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Stationarity</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>\(\partial_w L = 0\)</td><td>\(w = \sum_i \alpha_i y_i x_i\)</td></tr>
+      <tr><td>\(\partial_b L = 0\)</td><td>\(\sum_i \alpha_i y_i = 0\)</td></tr>
+      <tr><td>\(\partial_{\xi_i} L = 0\)</td><td>\(\alpha_i = C - \mu_i \in [0, C]\)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Plugging \(w\) back into \(L\) gives the <b>dual problem</b> in \(\alpha\):</p>
+  <div class="math">$$\max_{\alpha}\ \sum_i \alpha_i - \tfrac12 \sum_{i,j} \alpha_i \alpha_j\, y_i y_j\, \langle x_i, x_j\rangle \quad \text{s.t.} \quad 0 \le \alpha_i \le C,\ \ \sum_i \alpha_i y_i = 0.$$</div>
+  <p>Its solution \(\alpha\) gives the classifier:</p>
+  <div class="math">$$h(x) = w^\top x + b = \sum_i \alpha_i y_i \langle x_i, x\rangle + b.$$</div>
+  <div class="key"><b>Support vectors</b> = points with \(\alpha_i > 0\): on the edge or inside the band.</div>
+  <div class="key">The data enter <b>only through inner products</b> \(\langle x_i, x_j\rangle\).</div>
+</section>
+
+<section>
+  <h2><span class="n">5</span>Kernel trick</h2>
+  <ul>
+    <li><b>Lift.</b> \(\varphi\) maps \(x\) to a feature space where the classes are linearly separable. Linear in \(\varphi(x)\) = non-linear in \(x\).</li>
+    <li><b>Trick.</b> The dual only needs \(\langle \varphi(x_i), \varphi(x_j)\rangle\). Take \(K\) that computes it directly:</li>
+  </ul>
+  <div class="math">$$K(x, x') = \langle \varphi(x), \varphi(x')\rangle, \qquad h(x) = \sum_i \alpha_i\, y_i\, K(x_i, x) + b.$$</div>
+  <ul>
+    <li><b>Example.</b> \(K(x, x') = (1 + x^\top x')^p\): cost \(O(d)\) for any degree \(p\).</li>
+    <li><b>Valid kernel</b> (Mercer): every Gram matrix \(K_{ij} = K(x_i, x_j)\) is symmetric positive semi-definite. Read \(K\) as a similarity.</li>
+  </ul>
+  <div class="widget" id="w3">
+    <div class="wrow">
+      <svg class="plot" id="w3a" viewBox="0 0 300 300" aria-label="Original plane"></svg>
+      <svg class="plot" id="w3b" viewBox="0 0 300 300" aria-label="Feature space"></svg>
+    </div>
+    <div class="controls">
+      <label for="w3-c">plane height <input type="range" id="w3-c" min="0.05" max="1.4" step="0.01" value="0.25"></label>
+      <label for="w3-r">rotate <input type="range" id="w3-r" min="-90" max="90" step="1" value="20"></label>
+      <span class="readout" id="w3-out"></span>
+    </div>
+    <div class="hint">\(\varphi(x) = (x_1, x_2, x_1^2 + x_2^2)\). A plane in \(\mathbb{R}^3\) is a circle in \(\mathbb{R}^2\). Find the height that separates the classes.</div>
+  </div>
+</section>
+</main>
+
+<script>
+const DATA = {"sep": [[2.12, 0.05, -1], [1.39, 0.94, -1], [1.0, 1.1, -1], [0.29, 1.1, -1], [0.81, 2.7, -1], [1.3, 1.04, -1], [1.07, 0.9, -1], [0.73, 1.02, -1], [1.42, 1.09, -1], [1.63, 1.11, -1], [1.21, 1.9, -1], [1.45, 0.97, -1], [1.12, 1.44, -1], [2.07, 1.08, -1], [3.09, 3.45, 1], [2.8, 2.87, 1], [3.6, 3.26, 1], [3.24, 3.3, 1], [1.93, 3.46, 1], [2.77, 2.25, 1], [3.32, 3.32, 1], [3.0, 2.52, 1], [3.21, 2.98, 1], [3.83, 3.34, 1], [3.29, 3.5, 1], [3.11, 2.58, 1], [3.46, 3.26, 1], [3.1, 2.65, 1]], "soft": [[1.4, 1.46, -1], [1.25, 0.81, -1], [1.15, 0.75, -1], [1.43, 2.04, -1], [1.13, 0.96, -1], [1.67, 1.5, -1], [1.46, 0.79, -1], [1.38, 1.68, -1], [0.66, 1.05, -1], [0.35, 0.59, -1], [0.39, 1.17, -1], [0.7, 1.45, -1], [1.49, 1.2, -1], [0.02, 1.0, -1], [2.97, 2.96, 1], [2.16, 2.64, 1], [2.46, 2.46, 1], [3.58, 2.46, 1], [2.98, 3.39, 1], [2.68, 2.84, 1], [3.06, 2.94, 1], [2.33, 2.94, 1], [3.75, 2.05, 1], [3.47, 2.97, 1], [2.65, 4.0, 1], [3.42, 2.24, 1], [3.04, 3.22, 1], [2.9, 3.28, 1], [0.7, 2.2, 1]], "circ": [[-0.432, -0.112, 1], [0.389, 0.907, -1], [-0.236, 0.299, 1], [0.953, 0.071, -1], [-0.87, 0.414, -1], [0.282, -0.329, 1], [0.457, -0.044, 1], [0.727, 0.787, -1], [-0.289, 1.017, -1], [-0.148, -0.481, 1], [0.005, 0.324, 1], [-0.794, 0.509, -1], [0.342, -0.839, -1], [0.445, 0.188, 1], [-0.234, 0.255, 1], [0.999, -0.316, -1], [0.048, 1.13, -1], [-0.22, 0.455, 1], [-0.449, -0.099, 1], [1.116, -0.046, -1], [0.228, -0.203, 1], [0.723, 0.693, -1], [-1.156, 0.027, -1], [-0.171, -0.316, 1], [-0.711, -0.634, -1], [0.924, 0.286, -1], [0.089, 0.384, 1], [0.663, -0.744, -1], [-0.941, -0.399, -1], [0.71, 0.625, -1], [-0.38, 0.047, 1], [-0.261, -0.341, 1], [-0.366, -0.017, 1], [-0.075, -0.323, 1], [-0.396, -0.062, 1], [0.317, 0.169, 1], [-0.946, 0.004, -1], [-0.476, 0.736, -1], [0.238, 0.217, 1], [0.887, -0.531, -1], [0.348, 0.433, 1], [-0.102, 0.492, 1], [0.206, -0.997, -1], [1.051, 0.142, -1], [-0.395, -0.251, 1], [0.037, -1.044, -1], [-0.134, -0.846, -1], [0.97, 0.439, -1], [-0.138, 1.008, -1], [-0.282, 0.942, -1], [-0.153, -0.872, -1], [-0.295, -0.819, -1], [0.823, 0.667, -1], [1.036, -0.233, -1], [0.14, -0.399, 1], [0.302, 0.125, 1], [0.951, -0.124, -1], [-0.713, -0.625, -1], [-1.075, -0.259, -1], [0.354, 0.049, 1], [0.816, -0.489, -1], [0.306, 0.992, -1], [0.224, 0.32, 1], [-0.596, -0.664, -1], [-0.913, 0.453, -1], [-0.878, -0.336, -1], [-0.004, -0.327, 1], [0.428, 0.03, 1], [0.33, -0.326, 1], [-0.18, -0.404, 1], [-0.844, -0.536, -1], [-0.194, -0.364, 1], [0.031, 1.063, -1], [-0.157, 0.248, 1], [-0.558, 0.776, -1], [-0.982, -0.264, -1], [0.871, -0.606, -1], [0.283, -0.099, 1], [0.462, -0.099, 1], [-0.24, 0.151, 1], [0.119, 0.391, 1], [-0.298, 0.112, 1], [-0.613, 0.709, -1], [0.267, -0.363, 1], [-0.266, 0.33, 1], [-0.39, 0.218, 1], [-0.963, 0.301, -1], [-0.599, -0.826, -1], [-0.423, 0.163, 1], [-0.095, -0.517, 1], [0.587, -0.907, -1], [0.108, -0.343, 1], [-0.387, -0.944, -1], [0.143, 0.399, 1], [0.447, 0.175, 1], [0.308, 0.951, -1], [0.006, -0.32, 1], [-0.341, -0.264, 1], [-0.102, 0.571, 1], [-0.559, -0.258, 1], [-0.75, -0.747, -1], [-0.752, 0.755, -1], [-0.397, 0.068, 1], [0.534, 0.811, -1], [0.312, -0.315, 1], [0.292, -0.139, 1], [0.074, 0.52, 1], [0.278, 0.337, 1], [0.427, -0.817, -1], [0.302, -1.042, -1]]};
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const f2 = v => v.toFixed(2);
+
+/* frame: data window -> svg pixels */
+function frame(W, H, xr, yr, pad) {
+  const sx = (W - 2 * pad) / (xr[1] - xr[0]), sy = (H - 2 * pad) / (yr[1] - yr[0]);
+  return { W, H, pad, xr, yr,
+    X: x => pad + (x - xr[0]) * sx, Y: y => H - pad - (y - yr[0]) * sy,
+    ix: px => xr[0] + (px - pad) / sx, iy: py => yr[0] + (H - pad - py) / sy };
+}
+function svgPoint(svg, evt) {
+  const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function setupPlot(svg, F, id) {
+  svg.innerHTML = "";
+  const defs = el("defs", {}, svg), cp = el("clipPath", { id }, defs);
+  el("rect", { x: F.pad, y: F.pad, width: F.W - 2 * F.pad, height: F.H - 2 * F.pad }, cp);
+  el("rect", { x: F.pad, y: F.pad, width: F.W - 2 * F.pad, height: F.H - 2 * F.pad, class: "plotbg" }, svg);
+  const g = el("g", { "clip-path": `url(#${id})` }, svg);
+  return { g, top: el("g", {}, svg) };
+}
+/* line {w.x + b = c} as a long segment; band between c1 and c2 as a polygon (clipped by the plot) */
+function lineSeg(F, w, b, c) {
+  const n2 = w[0] * w[0] + w[1] * w[1], x0 = [(c - b) * w[0] / n2, (c - b) * w[1] / n2], t = [-w[1], w[0]].map(v => v / Math.sqrt(n2)), L = 50;
+  return [[x0[0] - L * t[0], x0[1] - L * t[1]], [x0[0] + L * t[0], x0[1] + L * t[1]]];
+}
+function drawLine(g, F, w, b, c, cls) {
+  const [p, q] = lineSeg(F, w, b, c);
+  return el("line", { x1: F.X(p[0]), y1: F.Y(p[1]), x2: F.X(q[0]), y2: F.Y(q[1]), class: cls }, g);
+}
+function drawBand(g, F, w, b, c1, c2, cls) {
+  const [p1, q1] = lineSeg(F, w, b, c1), [p2, q2] = lineSeg(F, w, b, c2);
+  return el("polygon", { points: [p1, q1, q2, p2].map(p => F.X(p[0]) + "," + F.Y(p[1])).join(" "), class: cls }, g);
+}
+function drawPoint(g, F, p, ring) {
+  const cx = F.X(p[0]), cy = F.Y(p[1]);
+  if (ring) el("circle", { cx, cy, r: 9, class: ring }, g);
+  if (p[2] > 0) el("path", { d: `M${cx - 5} ${cy}h10M${cx} ${cy - 5}v10`, class: "ppos" }, g);
+  else el("circle", { cx, cy, r: 4.2, class: "pneg" }, g);
+}
+
+/* linear soft-margin SVM by SMO, warm-started */
+function svm(P, C, a0) {
+  const n = P.length, y = P.map(p => p[2]);
+  const K = P.map(p => P.map(q => p[0] * q[0] + p[1] * q[1]));
+  const a = new Float64Array(n);
+  if (a0 && a0.length === n) for (let i = 0; i < n; i++) a[i] = Math.min(C, a0[i]);
+  // restore sum a_i y_i = 0 after clipping
+  let s = 0; for (let i = 0; i < n; i++) s += a[i] * y[i];
+  if (Math.abs(s) > 1e-9) for (let i = 0; i < n; i++) a[i] = 0;
+  let b = 0;
+  const f = i => { let v = b; for (let j = 0; j < n; j++) if (a[j] > 0) v += a[j] * y[j] * K[j][i]; return v; };
+  const tol = 1e-4;
+  function step(i, j, Ei) {
+    if (i === j) return false;
+    const Ej = f(j) - y[j], ai = a[i], aj = a[j];
+    let L, H;
+    if (y[i] !== y[j]) { L = Math.max(0, aj - ai); H = Math.min(C, C + aj - ai); }
+    else { L = Math.max(0, ai + aj - C); H = Math.min(C, ai + aj); }
+    if (H - L < 1e-12) return false;
+    const eta = 2 * K[i][j] - K[i][i] - K[j][j];
+    if (eta >= -1e-12) return false;
+    let ajn = Math.min(H, Math.max(L, aj - y[j] * (Ei - Ej) / eta));
+    if (Math.abs(ajn - aj) < 1e-9) return false;
+    const ain = ai + y[i] * y[j] * (aj - ajn);
+    const b1 = b - Ei - y[i] * (ain - ai) * K[i][i] - y[j] * (ajn - aj) * K[i][j];
+    const b2 = b - Ej - y[i] * (ain - ai) * K[i][j] - y[j] * (ajn - aj) * K[j][j];
+    b = (ain > 0 && ain < C) ? b1 : (ajn > 0 && ajn < C) ? b2 : (b1 + b2) / 2;
+    a[i] = ain; a[j] = ajn; return true;
+  }
+  // initialise b from current alphas
+  { let num = 0, cnt = 0; for (let i = 0; i < n; i++) if (a[i] > 1e-8 && a[i] < C - 1e-8) { b = 0; num += y[i] - f(i); cnt++; } b = cnt ? num / cnt : 0; }
+  let passes = 0, it = 0;
+  while (passes < 2 && it < 400) {
+    let changed = 0;
+    for (let i = 0; i < n; i++) {
+      const Ei = f(i) - y[i];
+      if ((y[i] * Ei < -tol && a[i] < C) || (y[i] * Ei > tol && a[i] > 0)) {
+        const E = []; for (let j = 0; j < n; j++) E.push([Math.abs(Ei - (f(j) - y[j])), j]);
+        E.sort((u, v) => v[0] - u[0]);
+        for (const [, j] of E) if (step(i, j, Ei)) { changed++; break; }
+      }
+    }
+    it++; passes = changed ? 0 : passes + 1;
+  }
+  const w = [0, 0]; for (let i = 0; i < n; i++) { w[0] += a[i] * y[i] * P[i][0]; w[1] += a[i] * y[i] * P[i][1]; }
+  let num = 0, cnt = 0;
+  for (let i = 0; i < n; i++) if (a[i] > 1e-6 && a[i] < C * (1 - 1e-4)) { num += y[i] - (w[0] * P[i][0] + w[1] * P[i][1]); cnt++; }
+  if (cnt) b = num / cnt;
+  else { // no free support vector: b is any value allowed by the KKT conditions, take the middle
+    let lo = -Infinity, hi = Infinity;
+    for (let i = 0; i < n; i++) {
+      const g = y[i] - (w[0] * P[i][0] + w[1] * P[i][1]), atC = a[i] > 1e-6;
+      if ((y[i] > 0) === atC) hi = Math.min(hi, g); else lo = Math.max(lo, g);
+    }
+    if (isFinite(lo) && isFinite(hi)) b = (lo + hi) / 2; else if (isFinite(lo)) b = lo; else if (isFinite(hi)) b = hi;
+  }
+  return { w, b, a: Array.from(a) };
+}
+
+/* ---------- Widget 1: drag the line ---------- */
+(() => {
+  const svg = document.querySelector("#w1 svg"), F = frame(420, 360, [0, 4.6], [0, 4.2], 14);
+  const P = DATA.sep, best = svm(P, 1e4), bestM = 2 / Math.hypot(...best.w);
+  const H = [[0.6, 3.9], [3.6, 0.4]];
+  let showBest = false, drag = -1;
+  const out = document.getElementById("w1-out"), btn = document.getElementById("w1-best");
+  function draw() {
+    const { g, top } = setupPlot(svg, F, "c1");
+    const d = [H[1][0] - H[0][0], H[1][1] - H[0][1]], len = Math.hypot(...d) || 1;
+    let n = [-d[1] / len, d[0] / len], c = -(n[0] * H[0][0] + n[1] * H[0][1]);
+    let s = P.map(p => n[0] * p[0] + n[1] * p[1] + c);
+    if (s.reduce((acc, v, i) => acc + v * P[i][2], 0) < 0) { n = n.map(v => -v); c = -c; s = s.map(v => -v); }
+    const ys = s.map((v, i) => v * P[i][2]), bad = ys.filter(v => v <= 0).length, m = Math.min(...ys);
+    if (showBest) { drawBand(g, F, best.w, best.b, -1, 1, "bandghost"); drawLine(g, F, best.w, best.b, 0, "ghost"); }
+    if (!bad) drawBand(g, F, n, c, -m, m, "band");
+    drawLine(g, F, n, c, 0, "bound");
+    P.forEach((p, i) => drawPoint(g, F, p, ys[i] <= 0 ? "bad" : (!bad && ys[i] < m + 1e-9) ? "near" : null));
+    H.forEach((h, k) => { const e = el("circle", { cx: F.X(h[0]), cy: F.Y(h[1]), r: 9, class: "handle", tabindex: 0 }, top); e.dataset.k = k; });
+    out.innerHTML = bad ? `${bad} point${bad > 1 ? "s" : ""} on the wrong side` : `your margin <b>${f2(2 * m)}</b> · SVM margin ${f2(bestM)}`;
+  }
+  svg.addEventListener("pointerdown", e => { if (e.target.dataset.k !== undefined) { drag = +e.target.dataset.k; svg.setPointerCapture(e.pointerId); } });
+  svg.addEventListener("pointermove", e => { if (drag < 0) return; const p = svgPoint(svg, e);
+    H[drag] = [Math.min(4.6, Math.max(0, F.ix(p.x))), Math.min(4.2, Math.max(0, F.iy(p.y)))]; draw(); });
+  svg.addEventListener("pointerup", () => drag = -1);
+  btn.addEventListener("click", () => { showBest = !showBest; btn.setAttribute("aria-pressed", showBest); btn.textContent = showBest ? "Hide SVM line" : "Show SVM line"; draw(); });
+  draw();
+})();
+
+/* ---------- Widget 2: live soft-margin SVM ---------- */
+(() => {
+  const svg = document.querySelector("#w2 svg"), F = frame(420, 360, [0, 4.6], [0, 4.2], 14);
+  let P = DATA.soft.map(p => p.slice()), mode = "drag", drag = -1, alpha = null, raf = 0;
+  const cIn = document.getElementById("w2-c"), out = document.getElementById("w2-out");
+  function draw() {
+    raf = 0;
+    const C = Math.pow(10, +cIn.value);
+    const r = svm(P, C, alpha); alpha = r.a;
+    const { w, b, a } = r, nw = Math.hypot(...w), u = w.map(v => v / nw);
+    const { g } = setupPlot(svg, F, "c2");
+    if (nw > 1e-9) {
+      drawBand(g, F, w, b, -1, 1, "band");
+      drawLine(g, F, w, b, 1, "marg"); drawLine(g, F, w, b, -1, "marg"); drawLine(g, F, w, b, 0, "bound");
+    }
+    let nsv = 0, nin = 0, nmis = 0;
+    P.forEach((p, i) => {
+      const m = p[2] * (w[0] * p[0] + w[1] * p[1] + b), xi = Math.max(0, 1 - m);
+      if (xi > 1e-3 && nw > 1e-9) {
+        const q = [p[0] + p[2] * u[0] * xi / nw, p[1] + p[2] * u[1] * xi / nw];
+        el("line", { x1: F.X(p[0]), y1: F.Y(p[1]), x2: F.X(q[0]), y2: F.Y(q[1]), class: "xi" }, g);
+        if (m < 0) nmis++; else nin++;
+      }
+    });
+    P.forEach((p, i) => {
+      let ring = null;
+      if (a[i] > 1e-6) { nsv++; ring = a[i] >= C * (1 - 1e-3) ? "svring2" : "svring"; }
+      drawPoint(g, F, p, ring);
+      el("circle", { cx: F.X(p[0]), cy: F.Y(p[1]), r: 12, class: "hit", "data-i": i }, g);
+    });
+    out.innerHTML = `C = <b>${C < 1 ? C.toFixed(2) : C.toFixed(C < 10 ? 1 : 0)}</b> · margin 2/‖w‖ = <b>${nw > 1e-9 ? f2(2 / nw) : "∞"}</b> · ${nsv} support vectors · ${nin} inside band · ${nmis} misclassified`;
+  }
+  const req = () => { if (!raf) raf = requestAnimationFrame(draw); };
+  svg.addEventListener("pointerdown", e => {
+    const p = svgPoint(svg, e);
+    if (mode === "drag") { if (e.target.dataset.i !== undefined) { drag = +e.target.dataset.i; svg.setPointerCapture(e.pointerId); } }
+    else { P.push([F.ix(p.x), F.iy(p.y), +mode]); alpha = null; req(); }
+  });
+  svg.addEventListener("pointermove", e => { if (drag < 0) return; const p = svgPoint(svg, e);
+    P[drag][0] = Math.min(4.6, Math.max(0, F.ix(p.x))); P[drag][1] = Math.min(4.2, Math.max(0, F.iy(p.y))); req(); });
+  svg.addEventListener("pointerup", () => drag = -1);
+  cIn.addEventListener("input", req);
+  document.querySelectorAll("#w2 .seg button").forEach(bt => bt.addEventListener("click", () => {
+    mode = bt.dataset.mode; document.querySelectorAll("#w2 .seg button").forEach(x => x.setAttribute("aria-pressed", x === bt)); }));
+  document.getElementById("w2-reset").addEventListener("click", () => { P = DATA.soft.map(p => p.slice()); alpha = null; cIn.value = 0; req(); });
+  draw();
+})();
+
+/* ---------- Widget 3: lift to the paraboloid ---------- */
+(() => {
+  const A = document.getElementById("w3a"), B = document.getElementById("w3b");
+  const cIn = document.getElementById("w3-c"), rIn = document.getElementById("w3-r"), out = document.getElementById("w3-out");
+  const P = DATA.circ, F = frame(300, 300, [-1.3, 1.3], [-1.3, 1.3], 12);
+  const th = Array.from({ length: 73 }, (_, k) => 2 * Math.PI * k / 72);
+  function draw() {
+    const c = +cIn.value, rot = +rIn.value * Math.PI / 180, r0 = Math.sqrt(c);
+    // 2D view
+    const { g } = setupPlot(A, F, "c3");
+    P.forEach(p => drawPoint(g, F, p, null));
+    el("path", { class: "bound", d: "M" + th.map(t => F.X(r0 * Math.cos(t)) + " " + F.Y(r0 * Math.sin(t))).join(" L") + "Z" }, g);
+    el("text", { x: 18, y: 290 }, A).textContent = "original plane (x₁, x₂)";
+    // 3D view
+    B.innerHTML = "";
+    const cs = Math.cos(rot), sn = Math.sin(rot);
+    const Pj = (x1, x2, z) => { const u = x1 * cs - x2 * sn, v = x1 * sn + x2 * cs; return [150 + 82 * u, 262 - 92 * z - 24 * v, v]; };
+    const path = pts => "M" + pts.map(q => q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" L");
+    [0.5, 1.0, 1.25].forEach(rr => el("path", { class: "mesh", d: path(th.map(t => Pj(rr * Math.cos(t), rr * Math.sin(t), rr * rr))) + "Z" }, B));
+    const o = Pj(0, 0, 0), zt = Pj(0, 0, 1.72);
+    el("line", { x1: o[0], y1: o[1], x2: zt[0], y2: zt[1], class: "axis", "marker-end": "url(#ah)" }, B);
+    el("text", { x: zt[0] + 6, y: zt[1] + 4 }, B).textContent = "x₁² + x₂²";
+    const S = 1.15, corners = [[-S, -S], [S, -S], [S, S], [-S, S]].map(q => Pj(q[0], q[1], c));
+    el("polygon", { class: "plane", points: corners.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ") }, B);
+    const pts = P.map(p => ({ p, q: Pj(p[0], p[1], p[0] * p[0] + p[1] * p[1]) })).sort((s, t) => t.q[2] - s.q[2]);
+    pts.forEach(({ p, q }) => {
+      if (p[2] > 0) el("path", { d: `M${q[0] - 4} ${q[1]}h8M${q[0]} ${q[1] - 4}v8`, class: "ppos" }, B);
+      else el("circle", { cx: q[0], cy: q[1], r: 3.3, class: "pneg" }, B);
+    });
+    el("path", { class: "bound", d: path(th.map(t => Pj(r0 * Math.cos(t), r0 * Math.sin(t), c))) + "Z" }, B);
+    el("text", { x: 18, y: 290 }, B).textContent = "feature space φ(x)";
+    const err = P.filter(p => (p[0] * p[0] + p[1] * p[1] < c ? 1 : -1) !== p[2]).length;
+    out.innerHTML = `height ${f2(c)} = radius² · <b>${err}</b> error${err === 1 ? "" : "s"}`;
+  }
+  cIn.addEventListener("input", draw); rIn.addEventListener("input", draw);
+  draw();
+})();
+</script>
+
+</body></html>
