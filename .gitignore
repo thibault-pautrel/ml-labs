@@ -10,7 +10,7 @@ __pycache__/
 *.pyc
 
 # Solutions are never published
-*_solution.ipynb
+lab_ensembles_solution.ipynb
 
 # OS
 .DS_Store
