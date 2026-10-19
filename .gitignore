@@ -9,8 +9,6 @@ venv/
 __pycache__/
 *.pyc
 
-# Solutions are never published
-lab_ensembles_solution.ipynb
 
 # OS
 .DS_Store
