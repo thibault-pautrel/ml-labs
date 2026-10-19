@@ -1,0 +1,524 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ensembles Step by Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<script>
+window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" defer></script>
+<style>
+/* Layout: one narrow reading column; each section = formula + a few keyword lines + one interactive figure. */
+:root {
+  --bg: #f7f8fb; --paper: #ffffff; --ink: #1b2233; --muted: #5a6478; --rule: #d9dde7;
+  --pos: #c43d22; --neg: #2457c5; --accent: #6b3fa0; --band: #e9e4f3; --c3: #2f8a52;
+  --display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; --c3: #5fcf8f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; --c3: #5fcf8f; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 72px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--display); margin: 0; }
+.lede { color: var(--muted); margin: 0; }
+h2 { font: 700 22px/1.25 var(--display); margin: 26px 0 0; display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .n { font: 500 14px/1 var(--mono); color: var(--accent); }
+section { display: grid; gap: 10px; }
+p { margin: 0; max-width: 66ch; }
+ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 66ch; }
+.math { overflow-x: auto; overflow-y: hidden; }
+mjx-container[display="true"] { margin: 0.3em 0 !important; }
+.key { background: var(--paper); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 10px 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font: 14.5px/1.4 var(--display); min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13.5px/1.3 var(--display); color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sw.pos { background: var(--pos); border-radius: 2px; } .sw.neg { background: var(--neg); }
+.sw.sv { border: 2px solid var(--accent); } .sw.sv2 { border: 2px dashed var(--accent); }
+
+/* interactive figures */
+.widget { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+.wrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.widget svg.plot { width: 100%; height: auto; display: block; touch-action: none; user-select: none; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font: 14px/1.3 var(--display); }
+.controls label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.controls input[type=range] { width: 160px; accent-color: var(--accent); }
+.readout { font: 13.5px/1.4 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.readout b { color: var(--accent); font-weight: 500; }
+.hint { font: 13.5px/1.4 var(--display); color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.seg button, .btn { font: 500 13px/1 var(--display); padding: 7px 11px; background: var(--paper); color: var(--ink); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--band); color: var(--accent); }
+.btn { border: 1px solid var(--rule); border-radius: 7px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.plotbg { fill: var(--bg); stroke: var(--rule); }
+.band { fill: var(--band); }
+.bandghost { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.bound { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.ghost { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.marg { stroke: var(--ink); stroke-width: 1.1; stroke-dasharray: 5 4; fill: none; opacity: .7; }
+.ppos { stroke: var(--pos); stroke-width: 2.6; fill: none; }
+.pneg { fill: var(--neg); }
+.hit { fill: transparent; cursor: grab; }
+.svring { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.svring2 { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 3 2.5; }
+.near { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.bad { fill: none; stroke: var(--pos); stroke-width: 2; }
+.handle { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.wvec { stroke: var(--accent); stroke-width: 2.4; }
+.xi { stroke: var(--pos); stroke-width: 2; }
+.axis { stroke: var(--muted); stroke-width: 1.1; fill: none; }
+.mesh { stroke: var(--muted); stroke-width: .9; fill: none; opacity: .5; }
+.plane { fill: var(--accent); opacity: .16; stroke: var(--accent); stroke-width: 1; }
+.planeb { fill: var(--accent); opacity: .08; }
+text { font-family: var(--display); fill: var(--muted); font-size: 12px; }
+.arrowhead-w { fill: var(--accent); } .arrowhead { fill: var(--muted); }
+.sw.c3 { background: var(--c3); }
+.pt { fill: var(--neg); cursor: grab; }
+.fit { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.res { stroke: var(--pos); stroke-width: 1.4; }
+.sq { fill: var(--pos); opacity: .13; stroke: var(--pos); stroke-opacity: .4; }
+.mean { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.vec { stroke-width: 2.6; fill: none; }
+.v1 { stroke: var(--pos); } .v2 { stroke: var(--neg); } .v3 { stroke: var(--c3); }
+.h1 { fill: var(--pos); } .h2 { fill: var(--neg); } .h3 { fill: var(--c3); }
+.hh { stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.probe { fill: var(--paper); stroke: var(--ink); stroke-width: 2; cursor: grab; }
+.contour { stroke: var(--muted); stroke-width: 1; fill: none; opacity: .6; }
+.iter { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+.iterpt { fill: var(--accent); }
+.start { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.optm { stroke: var(--ink); stroke-width: 2; }
+.cloud-ols { fill: var(--muted); opacity: .55; }
+.cloud-ridge { fill: var(--accent); opacity: .8; }
+.path { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 4 3; fill: none; }
+.truth { fill: none; stroke: var(--ink); stroke-width: 2; }
+.sig-true { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+.sig-obs { fill: var(--neg); opacity: .7; }
+.sig-rec { stroke: var(--accent); stroke-width: 2.2; fill: none; }
+.chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.stage { position: relative; }
+.stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 4px; }
+.stage svg.plot { position: relative; }
+@media (max-width: 480px) { body { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<style>
+.truef { stroke: var(--muted); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+.fcurve { stroke: var(--accent); stroke-width: 2.4; fill: none; }
+.fprev { stroke: var(--accent); stroke-width: 1.4; fill: none; opacity: .35; }
+.tcurve { stroke: var(--pos); stroke-width: 2.2; fill: none; }
+.resl { stroke: var(--pos); stroke-width: 1.1; opacity: .7; }
+.dpt { fill: var(--neg); opacity: .65; }
+.wpos { stroke: var(--pos); fill: none; stroke-width: 2.2; }
+.wneg { fill: var(--neg); }
+.faded { opacity: .18; }
+.split { stroke: var(--ink); stroke-width: 1.2; opacity: .55; }
+.split-new { stroke: var(--accent); stroke-width: 3; }
+.cur-tr { stroke: var(--muted); stroke-width: 2; fill: none; }
+.cur-te { stroke: var(--accent); stroke-width: 2.2; fill: none; }
+.cur-x { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
+.ptitle { font-size: 11px; fill: var(--ink); font-weight: 600; }
+.lg-tr, .lg-te { font-size: 10.5px; }
+.lg-tr { fill: var(--muted); } .lg-te { fill: var(--accent); }
+.btn.play { min-width: 64px; }
+.grid { stroke: var(--rule); stroke-width: 1; }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Master Smart Data · ENSAI · Lab Ensemble methods</div>
+  <h1>Ensembles step by step</h1>
+  <p class="lede">How boosting and bagging work. Press <b>Play</b>, or drag the sliders.</p>
+  <div class="legend"><span><i class="sw pos"></i>\(y = +1\)</span><span><i class="sw neg"></i>\(y = -1\)</span></div>
+</header>
+
+<section>
+  <h2><span class="n">1</span>Decision tree</h2>
+  <ul>
+    <li>Asks "\(x_j \le s\) ?" again and again. Each answer cuts a region in two: <b>rectangles</b>.</li>
+    <li>Each cut makes the two sides as <b>pure</b> as possible (Gini \(= 1 - \sum_c p_c^2\), 0 when pure).</li>
+    <li>Few cuts: too simple (<b>bias</b>). Many cuts: learns the noise (<b>variance</b>).</li>
+  </ul>
+  <div class="widget" id="w1">
+    <div class="wrow">
+      <div class="stage"><canvas width="340" height="270" aria-hidden="true"></canvas><svg class="plot" viewBox="0 0 340 270" aria-label="Tree growing split by split"></svg></div>
+      <svg class="plot" id="w1c" viewBox="0 0 340 270" aria-label="Accuracy versus number of splits"></svg>
+    </div>
+    <div class="controls">
+      <button class="btn play" type="button">Play</button><button class="btn next" type="button">Next</button>
+      <label for="w1-s">splits <input type="range" id="w1-s" min="0" max="10" step="1" value="0"></label>
+    </div>
+    <div class="readout" id="w1-out"></div>
+  </div>
+  <div class="key"><b>The thread.</b> Shallow trees are biased, deep trees are unstable. <b>Boosting</b> fixes the bias, <b>bagging</b> fixes the variance.</div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Boosting: a team that learns from its mistakes</h2>
+  <ul>
+    <li><b>Weak learners</b> (stumps, shallow trees) trained <b>one after the other</b>.</li>
+    <li><b>AdaBoost</b>: after each learner, the misclassified points <b>weigh more</b>. The next learner focuses on them.</li>
+    <li>Prediction = weighted vote \(\operatorname{sign} \sum_t \alpha_t h_t(x)\). Accurate learner, larger \(\alpha_t\).</li>
+  </ul>
+  <div class="widget" id="w2">
+    <div class="wrow">
+      <div class="stage"><canvas width="340" height="270" aria-hidden="true"></canvas><svg class="plot" viewBox="0 0 340 270" aria-label="AdaBoost step by step"></svg></div>
+      <svg class="plot" id="w2c" viewBox="0 0 340 270" aria-label="Accuracy versus number of learners"></svg>
+    </div>
+    <div class="controls">
+      <button class="btn play" type="button">Play</button><button class="btn next" type="button">Next</button>
+      <label for="w2-t">learners T <input type="range" id="w2-t" min="1" max="100" step="1" value="1"></label>
+      <div class="seg" role="group" aria-label="Depth of each learner">
+        <button type="button" data-d="1" aria-pressed="true">stump</button><button type="button" data-d="2" aria-pressed="false">depth 2</button><button type="button" data-d="4" aria-pressed="false">depth 4</button><button type="button" data-d="50" aria-pressed="false">deep</button>
+      </div>
+    </div>
+    <div class="readout" id="w2-out"></div>
+    <div class="hint">Purple: cuts of the newest learner. Point size ∝ weight it was trained with. Colour: vote of the team. Try "deep": the first tree is perfect on the training set, there is nothing left to correct.</div>
+  </div>
+  <ul>
+    <li><b>Gradient boosting</b>: a score \(F(x)\), probability \(p(x) = \sigma(F(x))\). Each new tree predicts what is <b>still missing</b>, the residuals \(r_i = y_i - p(x_i)\) (labels in \(\{0, 1\}\)). Add a fraction of it: \(F \leftarrow F + \eta\, h\).</li>
+    <li>\(r_i\) is minus the gradient of the cross-entropy in \(F\): each tree is a <b>gradient descent step</b>.</li>
+    <li><b>Learning rate</b> \(\eta\): small = cautious steps. Too many trees or large \(\eta\): <b>overfitting</b>. Stop on validation data.</li>
+  </ul>
+  <div class="widget" id="w3">
+    <div class="wrow">
+      <div class="stage"><canvas width="340" height="270" aria-hidden="true"></canvas><svg class="plot" viewBox="0 0 340 270" aria-label="Gradient boosting step by step"></svg></div>
+      <svg class="plot" id="w3c" viewBox="0 0 340 270" aria-label="Cross-entropy versus number of trees"></svg>
+    </div>
+    <div class="controls">
+      <button class="btn play" type="button">Play</button><button class="btn next" type="button">Next</button>
+      <label for="w3-t">trees T <input type="range" id="w3-t" min="1" max="150" step="1" value="1"></label>
+      <label for="w3-eta">η <input type="range" id="w3-eta" min="0.05" max="1" step="0.05" value="0.3"></label>
+      <div class="seg" role="group" aria-label="Depth of each tree">
+        <button type="button" data-d="1" aria-pressed="false">depth 1</button><button type="button" data-d="2" aria-pressed="true">depth 2</button><button type="button" data-d="4" aria-pressed="false">depth 4</button>
+      </div>
+    </div>
+    <div class="readout" id="w3-out"></div>
+    <div class="hint">Colour: \(p(x)\) after \(T\) trees. Point size ∝ residual \(|r_i|\) that tree \(T\) was fitted to (large = still badly predicted). Purple: cuts of tree \(T\). Right: cross-entropy (log-loss) on training and test points.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Bagging: a vote of independent experts</h2>
+  <ul>
+    <li><b>Bootstrap</b>: redraw \(n\) points <b>with replacement</b>. Each sample gives a different <b>deep</b> tree.</li>
+    <li>Each tree overfits, but <b>in different places</b>. The vote cancels these accidental errors: less <b>variance</b>.</li>
+    <li><b>Random forest</b>: each cut looks at a random subset of features. More diverse trees, better vote.</li>
+    <li><b>More trees never hurt</b>: the error plateaus.</li>
+  </ul>
+  <div class="widget" id="w4">
+    <div class="wrow">
+      <div class="stage"><canvas width="340" height="270" aria-hidden="true"></canvas><svg class="plot" id="w4a" viewBox="0 0 340 270" aria-label="Newest tree on its bootstrap sample"></svg></div>
+      <div class="stage"><canvas width="340" height="270" aria-hidden="true"></canvas><svg class="plot" id="w4b" viewBox="0 0 340 270" aria-label="Vote of the trees"></svg></div>
+    </div>
+    <svg class="plot" id="w4c" viewBox="0 0 680 170" aria-label="Test accuracy versus number of trees"></svg>
+    <div class="controls">
+      <button class="btn play" type="button">Play</button><button class="btn next" type="button">Next</button>
+      <label for="w4-b">trees B <input type="range" id="w4-b" min="1" max="100" step="1" value="1"></label>
+      <div class="seg" role="group" aria-label="Method">
+        <button type="button" data-m="bag" aria-pressed="true">bagging</button><button type="button" data-m="rf" aria-pressed="false">random forest</button><button type="button" data-m="same" aria-pressed="false">same data</button>
+      </div>
+    </div>
+    <div class="readout" id="w4-out"></div>
+    <div class="hint">Noisier moons. Left: newest tree, fully grown, with its bootstrap sample (size ∝ copies, faded = not drawn). Right: vote of all trees, intensity = share of the votes. Below: one tree alone jumps around, the vote climbs and plateaus. "Same data": every tree is identical, the vote is one tree. The gain comes from diversity.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Summary</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Boosting</th><th>Bagging, random forest</th></tr></thead>
+    <tbody>
+      <tr><td>Trees</td><td>shallow, one after the other</td><td>deep, independent</td></tr>
+      <tr><td>Each new tree</td><td>corrects the current errors</td><td>sees another bootstrap sample</td></tr>
+      <tr><td>Reduces</td><td><b>bias</b></td><td><b>variance</b></td></tr>
+      <tr><td>More trees</td><td>can overfit: validation, early stopping</td><td>never hurts, only costs time</td></tr>
+      <tr><td>Key parameters</td><td>\(T\), \(\eta\), depth</td><td>\(B\), features per cut</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const tx = (parent, x, y, s, attrs = {}) => { const t = el("text", Object.assign({ x, y }, attrs), parent); t.textContent = s; return t; };
+const f2 = v => v.toFixed(2), f3 = v => v.toFixed(3);
+function frame(W, H, xr, yr, pad) {
+  const p = Array.isArray(pad) ? pad : [pad, pad, pad, pad];   // left, right, top, bottom
+  const sx = (W - p[0] - p[1]) / (xr[1] - xr[0]), sy = (H - p[2] - p[3]) / (yr[1] - yr[0]);
+  return { W, H, p, xr, yr, sx, sy, X: x => p[0] + (x - xr[0]) * sx, Y: y => H - p[3] - (y - yr[0]) * sy,
+    ix: px => xr[0] + (px - p[0]) / sx, iy: py => yr[0] + (H - p[3] - py) / sy };
+}
+function setupPlot(svg, F, id, bg = true) {
+  svg.innerHTML = "";
+  const w = F.W - F.p[0] - F.p[1], h = F.H - F.p[2] - F.p[3], cp = el("clipPath", { id }, el("defs", {}, svg));
+  el("rect", { x: F.p[0], y: F.p[2], width: w, height: h }, cp);
+  el("rect", { x: F.p[0], y: F.p[2], width: w, height: h, class: "plotbg", style: bg ? "" : "fill:none" }, svg);
+  return { g: el("g", { "clip-path": `url(#${id})` }, svg), top: el("g", {}, svg) };
+}
+const pathD = pts => "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+function rngU(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function rngN(u) { return () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u()); }
+const hex = h => { h = h.trim().replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+
+function moons(n, seed, noise = 0.35) {
+  const u = rngU(seed), z = rngN(u), X = [], y = [];
+  for (let i = 0; i < n; i++) { const c = i % 2, t = Math.PI * u();
+    const p = c === 0 ? [Math.cos(t), Math.sin(t)] : [1 - Math.cos(t), 0.5 - Math.sin(t)];
+    X.push([p[0] + noise * z(), p[1] + noise * z()]); y.push(c ? 1 : -1); }
+  return { X, y };
+}
+const TR = moons(150, 21), TE = moons(300, 22), n = TR.X.length;
+const BOX = [[-1.6, 2.6], [-1.25, 1.75]], FR = frame(340, 270, BOX[0], BOX[1], [8, 8, 22, 8]);
+const all = TR.X.map((_, i) => i), ones = TR.X.map(() => 1);
+
+/* weighted Gini tree; nodes get a box and a breadth-first order */
+function buildTree(X, y, w, idx, maxDepth, feats, u) {
+  const nodes = [];
+  function rec(idx, depth, box) {
+    let wp = 0, wn = 0; idx.forEach(i => { if (y[i] > 0) wp += w[i]; else wn += w[i]; });
+    const node = { v: wp >= wn ? 1 : -1, depth, box, leaf: true, gini: 1 - (wp / (wp + wn)) ** 2 - (wn / (wp + wn)) ** 2 };
+    if (depth >= maxDepth || wp === 0 || wn === 0 || idx.length < 2) return node;
+    const cand = feats >= 2 ? [0, 1] : [u() < 0.5 ? 0 : 1]; let best = null; const tot = wp + wn;
+    for (const f of cand) {
+      const s = idx.slice().sort((a, b) => X[a][f] - X[b][f]); let lp = 0, ln = 0;
+      for (let k = 0; k < s.length - 1; k++) {
+        const i = s[k]; if (y[i] > 0) lp += w[i]; else ln += w[i];
+        if (X[s[k + 1]][f] === X[i][f]) continue;
+        const L = lp + ln, R = tot - L, rp = wp - lp, rn = wn - ln;
+        const imp = (L * (1 - (lp / L) ** 2 - (ln / L) ** 2) + R * (1 - (rp / R) ** 2 - (rn / R) ** 2)) / tot;
+        if (!best || imp < best.imp - 1e-12) best = { imp, f, thr: (X[i][f] + X[s[k + 1]][f]) / 2, k, s };
+      }
+    }
+    if (!best) return node;
+    Object.assign(node, { leaf: false, f: best.f, thr: best.thr, after: best.imp });
+    const bl = box.map(r => r.slice()), br = box.map(r => r.slice()); bl[best.f][1] = best.thr; br[best.f][0] = best.thr;
+    node.l = rec(best.s.slice(0, best.k + 1), depth + 1, bl); node.r = rec(best.s.slice(best.k + 1), depth + 1, br);
+    nodes.push(node); return node;
+  }
+  const root = rec(idx, 0, BOX.map(r => r.slice()));
+  nodes.sort((a, b) => a.depth - b.depth || a.box[0][0] - b.box[0][0] || a.box[1][0] - b.box[1][0]).forEach((nd, i) => nd.ord = i);
+  return { root, nodes };
+}
+/* predict with only the first k splits */
+const predK = (t, x, k = Infinity) => { let nd = t.root; while (!nd.leaf && nd.ord < k) nd = x[nd.f] <= nd.thr ? nd.l : nd.r; return nd.v; };
+const pred = (t, x) => predK(t, x);
+function drawSplits(g, F, t, k, cls, last = -1) {
+  t.nodes.forEach(nd => { if (nd.ord >= k) return; const b = nd.box;
+    const seg = nd.f === 0 ? [[nd.thr, b[1][0]], [nd.thr, b[1][1]]] : [[b[0][0], nd.thr], [b[0][1], nd.thr]];
+    el("line", { x1: F.X(seg[0][0]), y1: F.Y(seg[0][1]), x2: F.X(seg[1][0]), y2: F.Y(seg[1][1]), class: nd.ord === last ? "split-new" : cls }, g); });
+}
+function paint(cv, F, score) {
+  const ctx = cv.getContext("2d"), cs = getComputedStyle(document.documentElement);
+  const cP = hex(cs.getPropertyValue("--pos")), cN = hex(cs.getPropertyValue("--neg")), bg = hex(cs.getPropertyValue("--paper"));
+  const step = 4, img = ctx.createImageData(cv.width, cv.height);
+  for (let py = 0; py < cv.height; py += step) for (let px = 0; px < cv.width; px += step) {
+    const s = score([F.ix(px + step / 2), F.iy(py + step / 2)]), col = s >= 0 ? cP : cN, a = 0.1 + 0.45 * Math.min(1, Math.abs(s));
+    const c = col.map((v, i) => Math.round(bg[i] + (v - bg[i]) * a));
+    for (let dy = 0; dy < step && py + dy < cv.height; dy++) for (let dx = 0; dx < step && px + dx < cv.width; dx++) { const o = 4 * ((py + dy) * cv.width + px + dx); img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255; }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+function drawPts(g, F, X, y, size, faded) {
+  X.forEach((p, i) => { const s = size ? size[i] : 3.6; if (s <= 0 && !faded) return; const cx = F.X(p[0]), cy = F.Y(p[1]), r = Math.max(s, 3), cls = s <= 0 ? " faded" : "";
+    if (y[i] > 0) el("path", { d: `M${cx - r} ${cy}h${2 * r}M${cx} ${cy - r}v${2 * r}`, class: "wpos" + cls }, g);
+    else el("circle", { cx, cy, r: r * 0.85, class: "wneg" + cls }, g); });
+}
+const acc = (p, D) => D.X.reduce((a, x, i) => a + (p(x) === D.y[i] ? 1 : 0), 0) / D.X.length;
+/* small line chart: series [{v: array indexed from x0, cls, label}] */
+function curves(svg, W, H, series, xmax, xcur, ylab, xlab, yr, x0 = 0) {
+  svg.innerHTML = "";
+  const F = frame(W, H, [x0, xmax], yr, [34, 10, 22, 26]);
+  el("rect", { x: F.p[0], y: F.p[2], width: W - F.p[0] - F.p[1], height: H - F.p[2] - F.p[3], class: "plotbg" }, svg);
+  const ticks = [yr[0], (yr[0] + yr[1]) / 2, yr[1]];
+  ticks.forEach(v => { el("line", { x1: F.X(x0), y1: F.Y(v), x2: F.X(xmax), y2: F.Y(v), class: "grid" }, svg); tx(svg, F.p[0] - 4, F.Y(v) + 3, v.toFixed(2), { "text-anchor": "end", style: "font-size:9.5px" }); });
+  [x0, Math.round(xmax / 2), xmax].forEach(v => tx(svg, F.X(v), H - 12, String(v), { "text-anchor": "middle", style: "font-size:9.5px" }));
+  tx(svg, F.X(xmax), H - 2, xlab, { "text-anchor": "end", style: "font-size:10px" });
+  tx(svg, F.p[0], 14, ylab, { class: "ptitle" });
+  let lx = F.X(xmax);
+  series.slice().reverse().forEach(s => { const t = tx(svg, lx, 14, s.label, { "text-anchor": "end", class: s.cls === "cur-te" ? "lg-te" : "lg-tr" }); lx -= s.label.length * 5.6 + 12; });
+  series.forEach(s => el("path", { class: s.cls, d: pathD(s.v.map((v, i) => [F.X(i + x0), F.Y(Math.min(yr[1], Math.max(yr[0], v)))])) }, svg));
+  el("line", { x1: F.X(xcur), y1: F.p[2], x2: F.X(xcur), y2: H - F.p[3], class: "cur-x" }, svg);
+}
+/* Play / Next controls bound to a slider */
+function player(W, slider, onStep, ms = 350) {
+  const play = W.querySelector(".play"), next = W.querySelector(".next"); let timer = null;
+  const stop = () => { clearInterval(timer); timer = null; play.textContent = "Play"; };
+  const adv = () => { if (+slider.value >= +slider.max) { stop(); return false; } slider.value = +slider.value + 1; onStep(); return true; };
+  play.addEventListener("click", () => { if (timer) return stop(); if (+slider.value >= +slider.max) { slider.value = slider.min; onStep(); } play.textContent = "Pause"; timer = setInterval(adv, ms); });
+  next.addEventListener("click", () => { stop(); adv(); });
+  slider.addEventListener("input", () => { stop(); onStep(); });
+  return stop;
+}
+const redrawers = [];
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => redrawers.forEach(f => f()));
+new MutationObserver(() => redrawers.forEach(f => f())).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+function segment(W, attr, onPick) { W.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { W.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b)); onPick(b.dataset[attr]); })); }
+
+/* ---------- 1. Tree growing split by split ---------- */
+(() => {
+  const W = document.getElementById("w1"), svg = W.querySelector(".stage svg"), cv = W.querySelector("canvas"), C = document.getElementById("w1c");
+  const sIn = document.getElementById("w1-s"), out = document.getElementById("w1-out");
+  const t = buildTree(TR.X, TR.y, ones, all, 50, 2, null), N = t.nodes.length; sIn.max = N;
+  const accTr = [], accTe = []; for (let k = 0; k <= N; k++) { accTr.push(acc(x => predK(t, x, k), TR)); accTe.push(acc(x => predK(t, x, k), TE)); }
+  function draw() {
+    const k = +sIn.value;
+    paint(cv, FR, x => 0.8 * predK(t, x, k));
+    const { g, top } = setupPlot(svg, FR, "c1", false);
+    drawSplits(g, FR, t, k, "split", k - 1); drawPts(g, FR, TR.X, TR.y);
+    tx(top, 10, 15, "training points and cuts", { class: "ptitle" });
+    curves(C, 340, 270, [{ v: accTr, cls: "cur-tr", label: "training" }, { v: accTe, cls: "cur-te", label: "test" }], N, k, "accuracy", "splits", [0.5, 1]);
+    const nd = t.nodes.find(d => d.ord === k - 1);
+    const depth = Math.max(0, ...t.nodes.filter(d => d.ord < k).map(d => d.depth + 1));
+    out.innerHTML = (nd ? `split ${k}: <b>x${nd.f === 0 ? "₁" : "₂"} ≤ ${f2(nd.thr)}</b>, Gini ${f2(nd.gini)} → ${f2(nd.after)} · ` : "no split: one leaf · ") + `depth ${depth} · training <b>${f2(accTr[k])}</b> · test <b>${f2(accTe[k])}</b>`;
+  }
+  player(W, sIn, draw, 450); redrawers.push(draw); draw();
+})();
+
+/* ---------- 2. AdaBoost step by step ---------- */
+(() => {
+  const W = document.getElementById("w2"), svg = W.querySelector(".stage svg"), cv = W.querySelector("canvas"), C = document.getElementById("w2c");
+  const tIn = document.getElementById("w2-t"), out = document.getElementById("w2-out"), T = 100, cache = {};
+  let depth = 1;
+  const run = d => {
+    if (cache[d]) return cache[d];
+    let w = TR.X.map(() => 1 / n); const L = [], A = [], E = [], Wt = [];
+    const sTr = TR.X.map(() => 0), sTe = TE.X.map(() => 0), accTr = [], accTe = [];
+    for (let t = 0; t < T; t++) {
+      Wt.push(w.slice());
+      const h = buildTree(TR.X, TR.y, w, all, d, 2, null);
+      let e = 0; TR.X.forEach((x, i) => { if (pred(h, x) !== TR.y[i]) e += w[i]; });
+      e = Math.min(1 - 1e-10, Math.max(1e-10, e)); const a = Math.min(23, Math.log((1 - e) / e));
+      w = w.map((wi, i) => wi * (pred(h, TR.X[i]) !== TR.y[i] ? Math.exp(a) : 1)); const s = w.reduce((p, q) => p + q, 0); w = w.map(v => v / s);
+      L.push(h); A.push(a); E.push(e);
+      TR.X.forEach((x, i) => sTr[i] += a * pred(h, x)); TE.X.forEach((x, i) => sTe[i] += a * pred(h, x));
+      accTr.push(sTr.reduce((c, s, i) => c + ((s >= 0 ? 1 : -1) === TR.y[i] ? 1 : 0), 0) / n);
+      accTe.push(sTe.reduce((c, s, i) => c + ((s >= 0 ? 1 : -1) === TE.y[i] ? 1 : 0), 0) / TE.X.length);
+    }
+    return cache[d] = { L, A, E, Wt, accTr, accTe };
+  };
+  function draw() {
+    const k = +tIn.value, R = run(depth), At = R.A.slice(0, k).reduce((p, q) => p + q, 0);
+    const score = x => { let s = 0; for (let t = 0; t < k; t++) s += R.A[t] * pred(R.L[t], x); return 2 * s / At; };
+    paint(cv, FR, score);
+    const { g, top } = setupPlot(svg, FR, "c2", false);
+    drawSplits(g, FR, R.L[k - 1], Infinity, "split-new");
+    drawPts(g, FR, TR.X, TR.y, R.Wt[k - 1].map(v => Math.min(12, 1.8 + 2.4 * Math.sqrt(v * n))));
+    tx(top, 10, 15, `vote of ${k} learner${k > 1 ? "s" : ""}`, { class: "ptitle" });
+    curves(C, 340, 270, [{ v: R.accTr, cls: "cur-tr", label: "training" }, { v: R.accTe, cls: "cur-te", label: "test" }], T, k, "accuracy of the vote", "learners T", [0.5, 1], 1);
+    out.innerHTML = `learner ${k}: weighted error ε = ${f3(R.E[k - 1])}, vote α = ${f2(R.A[k - 1])} · team accuracy: training <b>${f2(R.accTr[k - 1])}</b>, test <b>${f2(R.accTe[k - 1])}</b>`;
+  }
+  player(W, tIn, draw, 300); segment(W, "d", d => { depth = +d; draw(); }); redrawers.push(draw); draw();
+})();
+
+/* ---------- 3. Gradient boosting for classification ---------- */
+(() => {
+  const W = document.getElementById("w3"), svg = W.querySelector(".stage svg"), cv = W.querySelector("canvas"), C = document.getElementById("w3c");
+  const tIn = document.getElementById("w3-t"), eIn = document.getElementById("w3-eta"), out = document.getElementById("w3-out"), T = 150, cache = {};
+  const sig = z => 1 / (1 + Math.exp(-z)), Y = TR.y.map(v => (v + 1) / 2), YT = TE.y.map(v => (v + 1) / 2);
+  let depth = 2;
+  /* regression tree in 2D on residuals r, Newton leaf values sum(r) / sum(p(1-p)) */
+  function rtree(r, hw, maxD) {
+    const nodes = [];
+    function rec(idx, d, box) {
+      let sr = 0, sh = 0; idx.forEach(i => { sr += r[i]; sh += hw[i]; });
+      const node = { leaf: true, v: Math.max(-4, Math.min(4, sr / (sh + 1e-9))), depth: d, box };
+      if (d >= maxD || idx.length < 6) return node;
+      let best = null; const tot = sr, tot2 = idx.reduce((s, i) => s + r[i] * r[i], 0);
+      for (const f of [0, 1]) {
+        const s = idx.slice().sort((a, b) => TR.X[a][f] - TR.X[b][f]); let ls = 0, ls2 = 0;
+        for (let k = 0; k < s.length - 1; k++) { ls += r[s[k]]; ls2 += r[s[k]] ** 2; const nl = k + 1, nr = s.length - nl;
+          if (nl < 3 || nr < 3 || TR.X[s[k + 1]][f] === TR.X[s[k]][f]) continue;
+          const sse = (ls2 - ls * ls / nl) + ((tot2 - ls2) - (tot - ls) ** 2 / nr);
+          if (!best || sse < best.sse) best = { sse, f, k, s, thr: (TR.X[s[k]][f] + TR.X[s[k + 1]][f]) / 2 }; }
+      }
+      if (!best) return node;
+      Object.assign(node, { leaf: false, f: best.f, thr: best.thr });
+      const bl = box.map(q => q.slice()), br = box.map(q => q.slice()); bl[best.f][1] = best.thr; br[best.f][0] = best.thr;
+      node.l = rec(best.s.slice(0, best.k + 1), d + 1, bl); node.r = rec(best.s.slice(best.k + 1), d + 1, br); nodes.push(node); return node;
+    }
+    const root = rec(all, 0, BOX.map(q => q.slice())); nodes.forEach((nd, i) => nd.ord = i); return { root, nodes };
+  }
+  const rv = (t, x) => { let nd = t.root; while (!nd.leaf) nd = x[nd.f] <= nd.thr ? nd.l : nd.r; return nd.v; };
+  const logloss = (F, Yv) => F.reduce((s, f, i) => { const p = Math.min(1 - 1e-12, Math.max(1e-12, sig(f))); return s - (Yv[i] ? Math.log(p) : Math.log(1 - p)); }, 0) / F.length;
+  const fit = (eta, d) => {
+    const key = eta + "|" + d; if (cache[key]) return cache[key];
+    const pb = Y.reduce((s, v) => s + v, 0) / n, f0 = Math.log(pb / (1 - pb)), Ftr = TR.X.map(() => f0), Fte = TE.X.map(() => f0);
+    const trees = [], res = [], lTr = [logloss(Ftr, Y)], lTe = [logloss(Fte, YT)], aTe = [];
+    for (let t = 0; t < T; t++) {
+      const p = Ftr.map(sig), r = Y.map((v, i) => v - p[i]), hw = p.map(q => q * (1 - q));
+      const h = rtree(r, hw, d); trees.push(h); res.push(r);
+      TR.X.forEach((x, i) => Ftr[i] += eta * rv(h, x)); TE.X.forEach((x, i) => Fte[i] += eta * rv(h, x));
+      lTr.push(logloss(Ftr, Y)); lTe.push(logloss(Fte, YT));
+      aTe.push(Fte.reduce((c, f, i) => c + ((f >= 0 ? 1 : 0) === YT[i] ? 1 : 0), 0) / TE.X.length);
+    }
+    return cache[key] = { f0, trees, res, lTr, lTe, aTe };
+  };
+  function draw() {
+    const eta = +eIn.value, k = +tIn.value, M = fit(eta, depth);
+    const Fx = x => { let s = M.f0; for (let t = 0; t < k; t++) s += eta * rv(M.trees[t], x); return s; };
+    paint(cv, FR, x => 2 * sig(Fx(x)) - 1);
+    const { g, top } = setupPlot(svg, FR, "c3", false);
+    drawSplits(g, FR, M.trees[k - 1], Infinity, "split-new");
+    drawPts(g, FR, TR.X, TR.y, M.res[k - 1].map(r => 1.6 + 8 * Math.abs(r)));
+    tx(top, 10, 15, `p(x) after ${k} tree${k > 1 ? "s" : ""}`, { class: "ptitle" });
+    curves(C, 340, 270, [{ v: M.lTr, cls: "cur-tr", label: "training" }, { v: M.lTe, cls: "cur-te", label: "test" }], T, k, "cross-entropy", "trees T", [0, 0.7]);
+    const best = M.lTe.indexOf(Math.min(...M.lTe));
+    out.innerHTML = `T = <b>${k}</b> · η = <b>${f2(eta)}</b> · cross-entropy: training <b>${f3(M.lTr[k])}</b>, test <b>${f3(M.lTe[k])}</b> (best test at T = ${best}) · test accuracy ${f2(M.aTe[k - 1])}`;
+  }
+  player(W, tIn, draw, 250); eIn.addEventListener("input", draw); segment(W, "d", d => { depth = +d; draw(); }); redrawers.push(draw); draw();
+})();
+
+/* ---------- 4. Bagging step by step (classification) ---------- */
+(() => {
+  const W = document.getElementById("w4"), cvs = W.querySelectorAll("canvas"), A = document.getElementById("w4a"), Bv = document.getElementById("w4b"), C = document.getElementById("w4c");
+  const bIn = document.getElementById("w4-b"), out = document.getElementById("w4-out"), B = 100, cache = {};
+  const D = moons(150, 38, 0.45), DT = moons(2000, 32, 0.45), m = D.X.length, onesD = D.X.map(() => 1);
+  let mode = "bag";
+  const grow = md => {
+    if (cache[md]) return cache[md];
+    const u = rngU(md === "rf" ? 202 : 101), trees = [], counts = [], vTe = DT.X.map(() => 0), accVote = [], accOne = [];
+    for (let b = 0; b < B; b++) {
+      const idx = md === "same" ? D.X.map((_, i) => i) : Array.from({ length: m }, () => Math.floor(u() * m)), c = new Array(m).fill(0); idx.forEach(i => c[i]++);
+      const t = buildTree(D.X, D.y, onesD, idx, 50, md === "rf" ? 1 : 2, u); trees.push(t); counts.push(c);
+      let a1 = 0; DT.X.forEach((x, i) => { const p = pred(t, x); vTe[i] += p; if (p === DT.y[i]) a1++; });
+      accOne.push(a1 / DT.X.length);
+      accVote.push(vTe.reduce((a, s, i) => a + ((s > 0 ? 1 : s < 0 ? -1 : pred(trees[0], DT.X[i])) === DT.y[i] ? 1 : 0), 0) / DT.X.length);
+    }
+    return cache[md] = { trees, counts, accVote, accOne };
+  };
+  function draw() {
+    const k = +bIn.value, G = grow(mode), t = G.trees[k - 1];
+    paint(cvs[0], FR, x => 0.8 * pred(t, x));
+    let { g, top } = setupPlot(A, FR, "c4a", false);
+    drawPts(g, FR, D.X, D.y, G.counts[k - 1].map(c => c ? 2.4 + 1.4 * c : 0), true);
+    tx(top, 10, 15, `tree ${k} on its ${mode === "same" ? "training set" : "bootstrap sample"}`, { class: "ptitle" });
+    paint(cvs[1], FR, x => { let s = 0; for (let b = 0; b < k; b++) s += pred(G.trees[b], x); return s / k; });
+    ({ g, top } = setupPlot(Bv, FR, "c4b", false)); drawPts(g, FR, D.X, D.y);
+    tx(top, 10, 15, `vote of ${k} tree${k > 1 ? "s" : ""}`, { class: "ptitle" });
+    curves(C, 680, 170, [{ v: G.accOne, cls: "cur-tr", label: "one tree alone" }, { v: G.accVote, cls: "cur-te", label: "vote" }], B, k, "test accuracy", "trees B", [0.65, 0.85], 1);
+    const mean = G.accOne.slice(0, k).reduce((p, q) => p + q, 0) / k;
+    out.innerHTML = `${{ bag: "Bagging", rf: "Random forest", same: "Same data" }[mode]} · B = <b>${k}</b> · test accuracy: one tree ${f2(mean)} on average, <b>vote of ${k} trees ${f2(G.accVote[k - 1])}</b>`;
+  }
+  player(W, bIn, draw, 250); segment(W, "m", v => { mode = v; draw(); }); redrawers.push(draw); draw();
+})();
+</script>
+
+</body></html>

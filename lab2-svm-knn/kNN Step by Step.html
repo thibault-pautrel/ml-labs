@@ -1,0 +1,332 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>kNN Step by Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<script>
+window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" defer></script>
+<style>
+/* Layout: one narrow reading column; each section = formula + a few keyword lines + one interactive figure. */
+:root {
+  --bg: #f7f8fb; --paper: #ffffff; --ink: #1b2233; --muted: #5a6478; --rule: #d9dde7;
+  --pos: #c43d22; --neg: #2457c5; --accent: #6b3fa0; --band: #e9e4f3; --c3: #2f8a52;
+  --display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; --c3: #5fcf8f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151d; --paper: #1a1f2a; --ink: #e6e9f0; --muted: #9aa3b5; --rule: #2e3545;
+  --pos: #ff7a5c; --neg: #6f9bff; --accent: #b892e8; --band: #2b2540; --c3: #5fcf8f; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 72px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--display); margin: 0; }
+.lede { color: var(--muted); margin: 0; }
+h2 { font: 700 22px/1.25 var(--display); margin: 26px 0 0; display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .n { font: 500 14px/1 var(--mono); color: var(--accent); }
+section { display: grid; gap: 10px; }
+p { margin: 0; max-width: 66ch; }
+ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 66ch; }
+.math { overflow-x: auto; overflow-y: hidden; }
+mjx-container[display="true"] { margin: 0.3em 0 !important; }
+.key { background: var(--paper); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 10px 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font: 14.5px/1.4 var(--display); min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13.5px/1.3 var(--display); color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sw.pos { background: var(--pos); border-radius: 2px; } .sw.neg { background: var(--neg); }
+.sw.sv { border: 2px solid var(--accent); } .sw.sv2 { border: 2px dashed var(--accent); }
+
+/* interactive figures */
+.widget { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+.wrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.widget svg.plot { width: 100%; height: auto; display: block; touch-action: none; user-select: none; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font: 14px/1.3 var(--display); }
+.controls label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.controls input[type=range] { width: 160px; accent-color: var(--accent); }
+.readout { font: 13.5px/1.4 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.readout b { color: var(--accent); font-weight: 500; }
+.hint { font: 13.5px/1.4 var(--display); color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.seg button, .btn { font: 500 13px/1 var(--display); padding: 7px 11px; background: var(--paper); color: var(--ink); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--band); color: var(--accent); }
+.btn { border: 1px solid var(--rule); border-radius: 7px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.plotbg { fill: var(--bg); stroke: var(--rule); }
+.band { fill: var(--band); }
+.bandghost { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.bound { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.ghost { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.marg { stroke: var(--ink); stroke-width: 1.1; stroke-dasharray: 5 4; fill: none; opacity: .7; }
+.ppos { stroke: var(--pos); stroke-width: 2.6; fill: none; }
+.pneg { fill: var(--neg); }
+.hit { fill: transparent; cursor: grab; }
+.svring { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.svring2 { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 3 2.5; }
+.near { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.bad { fill: none; stroke: var(--pos); stroke-width: 2; }
+.handle { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.wvec { stroke: var(--accent); stroke-width: 2.4; }
+.xi { stroke: var(--pos); stroke-width: 2; }
+.axis { stroke: var(--muted); stroke-width: 1.1; fill: none; }
+.mesh { stroke: var(--muted); stroke-width: .9; fill: none; opacity: .5; }
+.plane { fill: var(--accent); opacity: .16; stroke: var(--accent); stroke-width: 1; }
+.planeb { fill: var(--accent); opacity: .08; }
+text { font-family: var(--display); fill: var(--muted); font-size: 12px; }
+.arrowhead-w { fill: var(--accent); } .arrowhead { fill: var(--muted); }
+.sw.c3 { background: var(--c3); }
+.pt { fill: var(--neg); cursor: grab; }
+.fit { stroke: var(--ink); stroke-width: 2.2; fill: none; }
+.res { stroke: var(--pos); stroke-width: 1.4; }
+.sq { fill: var(--pos); opacity: .13; stroke: var(--pos); stroke-opacity: .4; }
+.mean { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.vec { stroke-width: 2.6; fill: none; }
+.v1 { stroke: var(--pos); } .v2 { stroke: var(--neg); } .v3 { stroke: var(--c3); }
+.h1 { fill: var(--pos); } .h2 { fill: var(--neg); } .h3 { fill: var(--c3); }
+.hh { stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.probe { fill: var(--paper); stroke: var(--ink); stroke-width: 2; cursor: grab; }
+.contour { stroke: var(--muted); stroke-width: 1; fill: none; opacity: .6; }
+.iter { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+.iterpt { fill: var(--accent); }
+.start { fill: var(--accent); stroke: var(--paper); stroke-width: 2; cursor: grab; }
+.optm { stroke: var(--ink); stroke-width: 2; }
+.cloud-ols { fill: var(--muted); opacity: .55; }
+.cloud-ridge { fill: var(--accent); opacity: .8; }
+.path { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 4 3; fill: none; }
+.truth { fill: none; stroke: var(--ink); stroke-width: 2; }
+.sig-true { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+.sig-obs { fill: var(--neg); opacity: .7; }
+.sig-rec { stroke: var(--accent); stroke-width: 2.2; fill: none; }
+.chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.stage { position: relative; }
+.stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 4px; }
+.stage svg.plot { position: relative; }
+@media (max-width: 480px) { body { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker>
+</defs></svg>
+<style>
+.nb { stroke: var(--muted); stroke-width: 1.1; opacity: .7; }
+.ball { fill: var(--band); stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 5 4; fill-opacity: .55; }
+.star { fill: var(--ink); stroke: var(--paper); stroke-width: 1.5; cursor: grab; }
+.dim { opacity: .35; }
+.mean-seg { stroke: var(--neg); stroke-width: 3; }
+.ll-seg { stroke: var(--accent); stroke-width: 3; }
+.truef { stroke: var(--muted); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+.knn-curve { stroke: var(--neg); stroke-width: 1.4; fill: none; opacity: .55; }
+.ll-curve { stroke: var(--accent); stroke-width: 1.4; fill: none; opacity: .55; }
+.hbar { fill: var(--accent); opacity: .75; }
+.x0h { fill: var(--ink); stroke: var(--paper); stroke-width: 2; cursor: ew-resize; }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Master Smart Data · ENSAI · Lab SVM and kNN, Part 2</div>
+  <h1>kNN step by step</h1>
+  <p class="lede">Key ideas behind the kNN part. All figures are interactive.</p>
+  <div class="legend">
+    <span><i class="sw pos"></i>class 1</span><span><i class="sw neg"></i>class 0</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="n">1</span>The rule</h2>
+  <p>Training set \((x_i, y_i)\), \(i = 1, \dots, m\). For a query \(x\), \(N_k(x)\) = indices of the \(k\) training points closest to \(x\).</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Task</th><th>Prediction at \(x\)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Classification</b><br>majority vote</td><td>\(\hat P(Y = c \mid X = x) = \frac1k \sum_{i \in N_k(x)} \mathbf{1}\{y_i = c\}, \quad \hat y(x) = \arg\max_c \hat P(Y = c \mid X = x)\)</td></tr>
+      <tr><td><b>Regression</b><br>local average</td><td>\(\hat f(x) = \frac1k \sum_{i \in N_k(x)} y_i\)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Local estimates</b> of \(P(Y = c \mid X = x)\) and of \(\mathbb{E}[Y \mid X = x]\): class proportions, or mean response, among the neighbours.</li>
+    <li><b>No training.</b> The model is the stored dataset. Cost at prediction: \(m\) distances in \(\mathbb{R}^d\) per query.</li>
+    <li><b>Distance.</b> Euclidean, \(\|x - x_i\|^2 = \sum_j (x_j - x_{ij})^2\). Features on different scales must be <b>standardised</b>.</li>
+  </ul>
+  <div class="widget" id="w1">
+    <svg class="plot" viewBox="0 0 420 330" aria-label="Neighbours of a query point"></svg>
+    <div class="controls">
+      <label for="w1-k">k <input type="range" id="w1-k" min="1" max="40" step="1" value="5"></label>
+      <span class="readout" id="w1-out"></span>
+    </div>
+    <div class="hint">Classification. Drag the black star. The dashed disc contains its \(k\) nearest neighbours.</div>
+  </div>
+  <div class="widget" id="w3">
+    <svg class="plot" viewBox="0 0 420 280" aria-label="kNN regression on a 1D signal"></svg>
+    <div class="controls">
+      <label for="w3-k">k <input type="range" id="w3-k" min="2" max="60" step="1" value="12"></label>
+    </div>
+    <div class="readout" id="w3-out"></div>
+    <div class="hint">Regression, \(d = 1\). Drag the black handle to move \(x\). Dashed: true \(f(x) = \sin 2\pi x\). Shaded: the neighbours. Blue segment and dot: their mean \(\hat f(x)\). Faint curve: \(\hat f\) at every \(x\).</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>The role of \(k\)</h2>
+  <ul>
+    <li><b>Small \(k\)</b>: very local, irregular boundary or \(\hat f\). Low bias, high variance.</li>
+    <li><b>Large \(k\)</b>: wide neighbourhoods, smooth boundary or \(\hat f\). High bias, low variance. \(k = m\): the global majority class (or the mean \(\bar y\)) everywhere.</li>
+    <li><b>Complexity</b> \(\approx m/k\) effective parameters (number of disjoint neighbourhoods).</li>
+    <li>\(k\) is a hyperparameter: choose it on <b>validation</b> data, never on the training error.</li>
+  </ul>
+  <div class="widget" id="w2">
+    <div class="stage"><canvas width="420" height="330" aria-hidden="true"></canvas><svg class="plot" viewBox="0 0 420 330" aria-label="kNN decision regions"></svg></div>
+    <div class="controls">
+      <label for="w2-k">k <input type="range" id="w2-k" min="1" max="121" step="1" value="1"></label>
+      <button class="btn" type="button" id="w2-new">New sample</button>
+    </div>
+    <div class="readout" id="w2-out"></div>
+    <div class="hint">Colour = predicted class, intensity = \(\hat P\) of that class. Accuracies: training points, and 1000 fresh test points from the same distribution.</div>
+  </div>
+</section>
+
+
+</main>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const tx = (parent, x, y, s, attrs = {}) => { const t = el("text", Object.assign({ x, y }, attrs), parent); t.textContent = s; return t; };
+const f2 = v => v.toFixed(2), clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function frame(W, H, xr, yr, pad) {
+  const sx = (W - 2 * pad) / (xr[1] - xr[0]), sy = (H - 2 * pad) / (yr[1] - yr[0]);
+  return { W, H, pad, xr, yr, sx, sy, X: x => pad + (x - xr[0]) * sx, Y: y => H - pad - (y - yr[0]) * sy,
+    ix: px => xr[0] + (px - pad) / sx, iy: py => yr[0] + (H - pad - py) / sy };
+}
+function svgPoint(svg, evt) { const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function setupPlot(svg, F, id, bg = true) {
+  svg.innerHTML = "";
+  const cp = el("clipPath", { id }, el("defs", {}, svg));
+  el("rect", { x: F.pad, y: F.pad, width: F.W - 2 * F.pad, height: F.H - 2 * F.pad }, cp);
+  el("rect", { x: F.pad, y: F.pad, width: F.W - 2 * F.pad, height: F.H - 2 * F.pad, class: "plotbg", style: bg ? "" : "fill:none" }, svg);
+  return { g: el("g", { "clip-path": `url(#${id})` }, svg), top: el("g", {}, svg) };
+}
+const pathD = pts => "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+function rngU(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function rngN(u) { return () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u()); }
+function draggable(svg, onMove) {
+  let k = null;
+  svg.addEventListener("pointerdown", e => { if (e.target.dataset.k !== undefined) { k = e.target.dataset.k; svg.setPointerCapture(e.pointerId); e.preventDefault(); } });
+  svg.addEventListener("pointermove", e => { if (k !== null) onMove(k, svgPoint(svg, e)); });
+  svg.addEventListener("pointerup", () => k = null);
+}
+function drawPoint(g, F, p, cls = "") {
+  const cx = F.X(p[0]), cy = F.Y(p[1]);
+  if (p[2] === 1) el("path", { d: `M${cx - 4.5} ${cy}h9M${cx} ${cy - 4.5}v9`, class: "ppos " + cls }, g);
+  else el("circle", { cx, cy, r: 3.8, class: "pneg " + cls }, g);
+}
+/* two moons with noise */
+function moons(n, seed, noise = 0.28) {
+  const u = rngU(seed), z = rngN(u), P = [];
+  for (let i = 0; i < n; i++) { const c = i % 2, t = Math.PI * u();
+    const p = c === 0 ? [Math.cos(t), Math.sin(t)] : [1 - Math.cos(t), 0.5 - Math.sin(t)];
+    P.push([p[0] + noise * z(), p[1] + noise * z(), c]); }
+  return P;
+}
+/* kNN vote: returns [predicted class, share of class 1] */
+function vote(P, q, k) {
+  const d = P.map((p, i) => [(p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2, i]).sort((a, b) => a[0] - b[0]);
+  let c1 = 0; for (let j = 0; j < k; j++) c1 += P[d[j][1]][2];
+  const s = c1 / k; return [s > 0.5 ? 1 : s < 0.5 ? 0 : P[d[0][1]][2], s, d];
+}
+const hex = h => { h = h.trim().replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+
+/* ---------- 1. Neighbours of a query ---------- */
+(() => {
+  const svg = document.querySelector("#w1 svg"), kIn = document.getElementById("w1-k"), out = document.getElementById("w1-out");
+  const F = frame(420, 330, [-1.6, 2.6], [-1.25, 1.75], 12), P = moons(80, 11), q = [0.45, 0.35];
+  function draw() {
+    const k = +kIn.value, [c, s, d] = vote(P, q, k), r = Math.sqrt(d[k - 1][0]), nb = new Set(d.slice(0, k).map(t => t[1]));
+    const { g, top } = setupPlot(svg, F, "c1");
+    el("ellipse", { cx: F.X(q[0]), cy: F.Y(q[1]), rx: r * F.sx, ry: r * F.sy, class: "ball" }, g);
+    d.slice(0, k).forEach(([, i]) => el("line", { x1: F.X(q[0]), y1: F.Y(q[1]), x2: F.X(P[i][0]), y2: F.Y(P[i][1]), class: "nb" }, g));
+    P.forEach((p, i) => drawPoint(g, F, p, nb.has(i) ? "" : "dim"));
+    const S = 9, cx = F.X(q[0]), cy = F.Y(q[1]), star = Array.from({ length: 10 }, (_, j) => { const a = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? S * 0.45 : S; return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)]; });
+    el("path", { d: pathD(star) + "Z", class: "star", "data-k": "q" }, top);
+    const n1 = Math.round(s * k);
+    out.innerHTML = `${k} neighbours: ${n1} of class 1, ${k - n1} of class 0 · P̂(Y = 1 | x) = <b>${f2(s)}</b> · prediction: <b>class ${c}</b>${s === 0.5 ? " (tie, broken by the nearest)" : ""}`;
+  }
+  draggable(svg, (k, p) => { q[0] = clamp(F.ix(p.x), -1.55, 2.55); q[1] = clamp(F.iy(p.y), -1.2, 1.7); draw(); });
+  kIn.addEventListener("input", draw); draw();
+})();
+
+/* ---------- 2. Decision regions vs k ---------- */
+(() => {
+  const wrap = document.getElementById("w2"), svg = wrap.querySelector("svg"), cv = wrap.querySelector("canvas"), ctx = cv.getContext("2d");
+  const kIn = document.getElementById("w2-k"), out = document.getElementById("w2-out");
+  const F = frame(420, 330, [-1.6, 2.6], [-1.25, 1.75], 12);
+  let seed = 3, P, T;
+  const sample = () => { P = moons(121, seed); T = moons(1000, seed + 1000); };
+  function draw() {
+    const k = +kIn.value, cs = getComputedStyle(document.documentElement), col = [hex(cs.getPropertyValue("--neg")), hex(cs.getPropertyValue("--pos"))], bg = hex(cs.getPropertyValue("--paper"));
+    const step = 5, img = ctx.createImageData(cv.width, cv.height);
+    for (let py = 0; py < cv.height; py += step) for (let px = 0; px < cv.width; px += step) {
+      const [c, s] = vote(P, [F.ix(px + step / 2), F.iy(py + step / 2)], k), conf = c ? s : 1 - s, a = 0.1 + 0.5 * (conf - 0.5) * 2;
+      const cc = col[c].map((v, i) => Math.round(bg[i] + (v - bg[i]) * a));
+      for (let dy = 0; dy < step && py + dy < cv.height; dy++) for (let dx = 0; dx < step && px + dx < cv.width; dx++) { const o = 4 * ((py + dy) * cv.width + px + dx); img.data[o] = cc[0]; img.data[o + 1] = cc[1]; img.data[o + 2] = cc[2]; img.data[o + 3] = 255; }
+    }
+    ctx.putImageData(img, 0, 0);
+    const { g } = setupPlot(svg, F, "c2", false);
+    P.forEach(p => drawPoint(g, F, p));
+    const acc = S => S.reduce((a, p) => a + (vote(P, p, k)[0] === p[2] ? 1 : 0), 0) / S.length;
+    out.innerHTML = `k = <b>${k}</b> (m = ${P.length}, m/k ≈ ${(P.length / k).toFixed(0)}) · training accuracy <b>${f2(acc(P))}</b> · test accuracy <b>${f2(acc(T))}</b>`;
+  }
+  let raf = 0; const req = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); }); };
+  kIn.addEventListener("input", req);
+  document.getElementById("w2-new").addEventListener("click", () => { seed++; sample(); draw(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  sample(); draw();
+})();
+
+/* ---------- 3. kNN regression ---------- */
+(() => {
+  const svg = document.querySelector("#w3 svg"), kIn = document.getElementById("w3-k"), out = document.getElementById("w3-out");
+  const F = frame(420, 280, [0, 1], [-1.7, 1.7], 14), u = rngU(6), z = rngN(u), m = 60;
+  const f = x => Math.sin(2 * Math.PI * x);
+  const P = Array.from({ length: m }, () => { const x = u(); return [x, f(x) + 0.2 * z()]; }).sort((a, b) => a[0] - b[0]);
+  let x0 = 0.3;
+  function fit(x, k) {
+    const nb = P.map((p, i) => [Math.abs(p[0] - x), i]).sort((a, b) => a[0] - b[0]).slice(0, k).map(t => t[1]);
+    return { nb, mean: nb.reduce((s, i) => s + P[i][1], 0) / k };
+  }
+  function draw() {
+    const k = +kIn.value, { nb, mean } = fit(x0, k), S = new Set(nb);
+    const { g, top } = setupPlot(svg, F, "c3");
+    const grid = Array.from({ length: 241 }, (_, i) => i / 240);
+    el("path", { class: "truef", d: pathD(grid.map(x => [F.X(x), F.Y(f(x))])) }, g);
+    el("path", { class: "knn-curve", d: pathD(grid.map(x => [F.X(x), F.Y(fit(x, k).mean)])) }, g);
+    const lo = Math.min(...nb.map(i => P[i][0])), hi = Math.max(...nb.map(i => P[i][0]));
+    el("rect", { x: F.X(lo), y: F.pad, width: Math.max(1, F.X(hi) - F.X(lo)), height: F.H - 2 * F.pad, style: "fill:var(--accent);opacity:.07" }, g);
+    P.forEach((p, i) => el("circle", { cx: F.X(p[0]), cy: F.Y(p[1]), r: S.has(i) ? 3.6 : 2.6, class: "pneg", style: S.has(i) ? "" : "opacity:.3" }, g));
+    el("line", { x1: F.X(lo), y1: F.Y(mean), x2: F.X(hi), y2: F.Y(mean), class: "mean-seg" }, g);
+    el("line", { x1: F.X(x0), y1: F.pad, x2: F.X(x0), y2: F.H - F.pad, class: "axis", style: "opacity:.5" }, g);
+    el("circle", { cx: F.X(x0), cy: F.Y(mean), r: 5, style: "fill:var(--neg);stroke:var(--paper);stroke-width:1.5" }, g);
+    el("rect", { x: F.X(x0) - 7, y: F.H - F.pad - 16, width: 14, height: 16, rx: 3, class: "x0h", "data-k": "x0" }, top);
+    tx(top, F.X(x0) + 10, F.H - F.pad - 4, "x", { style: "fill:var(--ink);font-weight:600" });
+    out.innerHTML = `x = ${f2(x0)} · ${k} neighbours · f̂(x) = <b>${f2(mean)}</b> · true f(x) = ${f2(f(x0))}`;
+  }
+  draggable(svg, (k, p) => { x0 = clamp(F.ix(p.x), 0, 1); draw(); });
+  kIn.addEventListener("input", draw); draw();
+})();
+
+</script>
+
+</body></html>
